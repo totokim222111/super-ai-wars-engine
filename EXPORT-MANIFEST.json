@@ -52,8 +52,8 @@
     },
     {
       "path": "LICENSE",
-      "size": 3172,
-      "sha256": "37c1cf2c2cd24eeb28c2884b074a15ad21b7b294752ba8c973ae15a574df4bdf"
+      "size": 1932,
+      "sha256": "74d74ae8c1f4cb236d544a48557df9f07f32166bce077b777ea7d7d540f72612"
     },
     {
       "path": "package-lock.json",
@@ -422,13 +422,13 @@
     },
     {
       "path": "PUBLISHING.md",
-      "size": 998,
-      "sha256": "b8ccd69d68f25493166dbdb5f894a22cd136560444ebd4204821ba9ae33723f0"
+      "size": 1213,
+      "sha256": "9b5279e9bc60c29201fc228789d93c9b292fbb947953a013c1e7942416299a6d"
     },
     {
       "path": "README.md",
-      "size": 5116,
-      "sha256": "b0e9a24fc5380dd0fe5a6aabab44effd909904afdd7237fb0479933acb73cd95"
+      "size": 6797,
+      "sha256": "ac92bdd96d0fbc711bd2a20ef0e6eecda9e0d14dcb1b5a4b405ab5541aface21"
     },
     {
       "path": "src/campaign/content.ts",
@@ -1427,8 +1427,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "size": 1667,
-      "sha256": "c72a678be04cb0a66e931b39dabaf5cc663790de919886913d1372ef565e54e4"
+      "size": 1816,
+      "sha256": "75c623a65dc5a4f343f2f165b1b7c13d22bf85a91d15ec63e0cc2b06a81a65bd"
     },
     {
       "path": "tools/art_info.mjs",

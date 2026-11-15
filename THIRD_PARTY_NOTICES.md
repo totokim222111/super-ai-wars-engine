@@ -1,8 +1,8 @@
 # Third-party notices · 제3자 저작물 고지
 
-이 프로젝트의 대부분은 [PLEASE License](LICENSE)로 권리를 포기했습니다. 아래 저작물은 다른 사람이 만들었으므로 **원저작자의 라이선스와 뜻을 따릅니다.** 다시 배포할 때도 각 조건을 지켜 주세요.
+제가 만든 부분은 [LICENSE](LICENSE)에 적은 대로 편하게 쓰셔도 됩니다. PLEASE는 "제발 한 번 봐주세요" 하는 장난이고, 관심 가져주시는 것만으로도 감사합니다. 아래 자료는 다른 분들이 만든 것이니 **각 제작자의 이용 조건을 따라 주세요.** 다시 나눌 때도 같은 조건을 지켜 주세요.
 
-Most of this project is waived under the [PLEASE License](LICENSE). The works below belong to their authors and keep their own licenses. Please respect them when you redistribute.
+Our own work is free to use as described in [LICENSE](LICENSE). PLEASE is a playful name: your interest alone means a lot. The works below belong to their authors and keep their own terms, including when redistributed.
 
 ## Music · 음악
 
