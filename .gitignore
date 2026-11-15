@@ -1,0 +1,9 @@
+tools/out/
+node_modules/
+dist/
+__pycache__/
+*.pyc
+
+# 생성 원본은 제외, manifest.json·프롬프트 txt는 보관
+art-src/**/*.png
+audio-src/downloads/

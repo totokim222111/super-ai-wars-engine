@@ -1,0 +1,1 @@
+import {spawnSync} from 'node:child_process';const r=spawnSync(process.env.PYTHON??'python',['-I','tools/artifact_files.py','--dist',process.env.OUT_DIR??'dist','--copy-to',process.env.ARTIFACT_DIR??'tools/out/release-cleanup/artifact'],{stdio:'inherit'});process.exit(r.status??1);

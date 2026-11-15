@@ -1,0 +1,13 @@
+{
+  "version": "example-1",
+  "mechs": "data/mechs.json",
+  "weapons": "data/weapons.json",
+  "pilots": "data/pilots.json",
+  "spirits": "data/spirits.json",
+  "skills": "data/skills.json",
+  "parts": "data/parts.json",
+  "combinations": "data/combinations.json",
+  "fullUpgradeBonuses": "data/fullUpgradeBonuses.json",
+  "tagEffects": "data/tagEffects.json",
+  "terrain": "data/terrain.json"
+}

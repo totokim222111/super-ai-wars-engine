@@ -1,0 +1,55 @@
+{
+  "pulse": {
+    "anim": {
+      "template": "beam",
+      "color": "#7fe9f7"
+    }
+  },
+  "blade": {
+    "anim": {
+      "template": "slash-combo",
+      "hits": 2,
+      "words": [
+        "슥",
+        "탁"
+      ]
+    }
+  },
+  "pebble": {
+    "anim": {
+      "template": "rapid-fire",
+      "rows": 1,
+      "shots": 3
+    }
+  },
+  "practice-round": {
+    "anim": {
+      "template": "heavy-shot"
+    }
+  },
+  "trio-beam": {
+    "anim": {
+      "template": "finisher"
+    },
+    "cutin": true,
+    "video": "walk-finisher"
+  },
+  "paint-tag": {
+    "anim": {
+      "template": "heavy-shot",
+      "color": "#a5e2dc"
+    }
+  },
+  "echo-copy": {
+    "anim": {
+      "template": "heavy-shot",
+      "color": "#a5e2dc"
+    }
+  },
+  "second-beat": {
+    "anim": {
+      "template": "heavy-shot",
+      "color": "#a5e2dc"
+    }
+  }
+}

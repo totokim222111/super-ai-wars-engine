@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <meta name="claude:viewport-fit-sides" content="cover">
+    <title>전략 RPG 진열장</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&family=Chakra+Petch:wght@700&display=swap">
+    <style>
+      /* 한 가지 모습(어두운 게임 화면)으로만 보이는 시범 페이지다. */
+      :root{--bg:#05070c;--ink:#e9ecf3;--sub:#9aa5ba;--line:#2a3550;--ally:#2f8cff;--gold:#ffd23f;color-scheme:dark}
+      *{box-sizing:border-box}
+      html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+      body *{touch-action:none}body{display:flex;align-items:center;justify-content:center}
+      main{width:min(100vw,calc(100vh * 16 / 9));margin:0}main>p{display:none}main>#status:not(:empty){display:block;position:fixed;left:16px;bottom:16px;z-index:20;background:#05070c;padding:12px}
+      canvas{display:block;width:100%;max-width:100%;aspect-ratio:16/9;background:#000;outline:1px solid var(--line);touch-action:none;cursor:pointer}
+      .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+      button{font:700 15px/1 "Noto Sans KR","Malgun Gothic",sans-serif;color:var(--ink);background:#0e1630;border:1px solid var(--line);padding:11px 16px;cursor:pointer}
+      button:hover{border-color:var(--ally)}
+      button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+      button.main{background:var(--ally);border-color:var(--ally);color:#fff}
+      button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#0a1024}
+      p{margin:0;color:var(--sub);font-size:14px;line-height:1.6;max-width:70ch}
+      #status{color:var(--gold)}
+      /* 휴대폰 세로 화면: 게임은 가로로만 한다. */
+      #rotate{display:none}@media (orientation:portrait) and (max-width:820px){#rotate:not([hidden]){display:flex;position:fixed;inset:0;z-index:10;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;background:#05070c;color:#e9ecf3;text-align:center;font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}}#rotate svg{width:96px;height:96px;animation:turn 2.4s ease-in-out infinite}@keyframes turn{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}#rotate b{font-size:22px;font-weight:900;letter-spacing:-.02em}#rotate span{font-size:14px;color:#9aa5ba;line-height:1.6}#rotate button{margin-top:6px;font:700 14px/1 "Noto Sans KR",sans-serif;color:#9aa5ba;background:none;border:1px solid #2a3550;padding:10px 14px}@media (prefers-reduced-motion:reduce){#rotate svg{animation:none;transform:rotate(-90deg)}}
+    </style>
+    <script type="module" src="/src/v2/gallery/main.ts"></script>
+  </head>
+  <body>
+    <main>
+      <canvas width="1280" height="720" aria-label="전략 RPG 진열장. 방향키로 고르고 Enter로 결정, Esc로 뒤로 갑니다."></canvas>
+      <p>키보드(방향키, Enter, Esc), 마우스, 터치로 조작합니다. 대사와 수치는 연출을 보여 주기 위한 예시입니다.</p>
+      <p id="status"></p>
+    </main>
+    <div id="rotate" role="dialog" aria-label="화면 방향 안내"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="6" width="24" height="52" rx="4" fill="none" stroke="#ffd23f" stroke-width="3"/><circle cx="32" cy="51" r="2" fill="#ffd23f"/></svg><b>가로로 돌려 주세요</b><span>가로 화면에서 플레이합니다.</span><button type="button" onclick="this.parentNode.hidden=true">이대로 보기</button></div>
+  </body>
+</html>

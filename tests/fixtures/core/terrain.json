@@ -1,0 +1,58 @@
+[
+  {
+    "id": "sea",
+    "name": "바다",
+    "env": "sea",
+    "moveCost": {
+      "air": 1,
+      "ground": 2,
+      "sea": 1,
+      "space": null
+    },
+    "hitMod": 0,
+    "damageMod": 0
+  },
+  {
+    "id": "ground",
+    "name": "구조물",
+    "env": "ground",
+    "moveCost": {
+      "air": 1,
+      "ground": 1,
+      "sea": null,
+      "space": null
+    },
+    "hitMod": -5,
+    "damageMod": -5
+  },
+  {
+    "id": "base",
+    "name": "시험 기지",
+    "env": "ground",
+    "moveCost": {
+      "air": 1,
+      "ground": 1,
+      "sea": null,
+      "space": null
+    },
+    "hitMod": -10,
+    "damageMod": -10,
+    "recover": {
+      "hp": 10,
+      "en": 10
+    }
+  },
+  {
+    "id": "wall",
+    "name": "시험 장벽",
+    "env": "ground",
+    "moveCost": {
+      "air": 1,
+      "ground": null,
+      "sea": null,
+      "space": null
+    },
+    "hitMod": 0,
+    "damageMod": 0
+  }
+]

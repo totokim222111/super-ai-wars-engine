@@ -1,0 +1,28 @@
+{
+  "lesson-1": {
+    "default": {
+      "pattern": "hold"
+    }
+  },
+  "lesson-2": {
+    "groups": [
+      {
+        "id": "gate-sentry",
+        "ids": [
+          "target"
+        ],
+        "behavior": {
+          "pattern": "boss",
+          "when": [
+            {
+              "turn": 3
+            },
+            {
+              "hpBelow": 0.7
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

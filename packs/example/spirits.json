@@ -1,0 +1,10 @@
+{
+  "focus": {
+    "kind": "focus",
+    "color": "#7fe9f7"
+  },
+  "scan": {
+    "kind": "focus",
+    "color": "#7fe9f7"
+  }
+}

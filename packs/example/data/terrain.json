@@ -1,0 +1,16 @@
+[
+  {
+    "id": "plain",
+    "name": "바닥",
+    "char": ".",
+    "env": "ground",
+    "moveCost": {
+      "ground": 1,
+      "air": 1,
+      "sea": null,
+      "space": null
+    },
+    "hitMod": 0,
+    "damageMod": 0
+  }
+]

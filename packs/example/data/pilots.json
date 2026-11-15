@@ -1,0 +1,152 @@
+[
+  {
+    "id": "hero",
+    "name": "모험가",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 160,
+      "evade": 125,
+      "skill": 130,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "spirits": [
+      {
+        "id": "focus",
+        "level": 1
+      },
+      {
+        "id": "scan",
+        "level": 1
+      },
+      {
+        "id": "awaken",
+        "level": 1
+      }
+    ],
+    "statCurves": {
+      "skill": [
+        {
+          "level": 1,
+          "value": 130
+        },
+        {
+          "level": 11,
+          "value": 140
+        }
+      ]
+    }
+  },
+  {
+    "id": "loop",
+    "name": "루프",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 160,
+      "evade": 125,
+      "skill": 110,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "spirits": [
+      {
+        "id": "focus",
+        "level": 1
+      }
+    ],
+    "skills": [
+      {
+        "id": "soft-shield"
+      }
+    ]
+  },
+  {
+    "id": "dummy",
+    "name": "연습 인형",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 160,
+      "evade": 125,
+      "skill": 90,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "spirits": [
+      {
+        "id": "focus",
+        "level": 1
+      }
+    ]
+  },
+  {
+    "id": "buddy",
+    "name": "점",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 160,
+      "evade": 125,
+      "skill": 110,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "spirits": [
+      {
+        "id": "focus",
+        "level": 1
+      }
+    ]
+  },
+  {
+    "id": "echo",
+    "name": "메아리",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 160,
+      "evade": 125,
+      "skill": 110,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "spirits": [
+      {
+        "id": "supply",
+        "level": 1
+      }
+    ]
+  }
+]

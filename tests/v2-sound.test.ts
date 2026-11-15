@@ -1,0 +1,22 @@
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
+import {Sound,type SoundPack} from '../src/v2/sound';
+
+class Param {value=1;setValueAtTime(v:number){this.value=v;}linearRampToValueAtTime(v:number){this.value=v;}exponentialRampToValueAtTime(v:number){this.value=v;}}
+class AudioNode {gain=new Param();connect(node:AudioNode){return node;}}
+class Source extends AudioNode {buffer?:unknown;loop=false;loopStart=0;loopEnd=0;started?:number;stopped?:number;onended?:()=>void;start(t=0){this.started=t;}stop(t=0){this.stopped=t;}}
+class Context {static latest:Context;state='running';currentTime=0;sampleRate=44100;destination=new AudioNode();sources:Source[]=[];gains:AudioNode[]=[];constructor(){Context.latest=this;}createGain(){const n=new AudioNode();this.gains.push(n);return n;}createBuffer(_channels:number,length:number){return {getChannelData:()=>new Float32Array(length)};}createBufferSource(){const s=new Source();this.sources.push(s);return s;}async resume(){this.state='running';}async decodeAudioData(){return {duration:90};}}
+const entry={file:'x.ogg',title:'제목',author:'제작자',license:'CC0',source:'https://example.test/source'};
+const fixture:SoundPack={name:'fixture',sfx:{hit:entry},bgm:{map:{...entry,loopStart:4,loopEnd:80},battle:{...entry,loopStart:2,loopEnd:70},victory:{...entry,author:'제작자 B',credit:'음악: 제작자 B',license:'CC BY 4.0',licenseUrl:'https://creativecommons.org/licenses/by/4.0/',modifications:'게임용 MP3 재인코딩',loop:false}}};
+async function sound(){const s=new Sound();await s.loadPack('/audio/');await s.preload([...s.musicIds(),...s.effectIds()]);s.unlock();return s;}
+beforeEach(()=>{vi.stubGlobal('AudioContext',Context);vi.stubGlobal('OfflineAudioContext',Context);vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>structuredClone(fixture),arrayBuffer:async()=>new TextEncoder().encode(JSON.stringify(fixture)).buffer})));});
+afterEach(()=>vi.unstubAllGlobals());
+
+describe('Sound without audio hardware',()=>{
+ it('표시용 크레딧에 라이선스 링크와 OGG 변경 사실을 전달한다',async()=>{const s=await sound();expect(s.credits()).toContainEqual(expect.objectContaining({id:'victory',licenseUrl:'https://creativecommons.org/licenses/by/4.0/',modifications:'게임용 MP3 재인코딩'}));});
+ it('음량0을 unlock 전후에 지키고 나중에 볼륨을 바꾸면 현재 버스에 반영한다',async()=>{const s=new Sound();await s.loadPack('/audio/');await s.preload(['map','hit']);s.sfxVolume=0;s.musicVolume=0;s.music('map');s.unlock();const c=Context.latest;expect(c.gains[0].gain.value).toBe(0);expect(c.gains[1].gain.value).toBe(0);const n=c.sources.length;s.play('hit');expect(c.sources).toHaveLength(n);s.musicVolume=.3;s.sfxVolume=.2;expect(c.gains[1].gain.value).toBe(.3);s.play('hit');expect(c.sources).toHaveLength(n+1);});
+ it('첫 입력에서 context가 바로 running이어도 대기한 타이틀 곡을 시작한다',async()=>{const s=new Sound();await s.loadPack('/audio/');await s.preload(['map']);s.music('map');s.unlock();expect(Context.latest.sources).toHaveLength(1);s.unlock();expect(Context.latest.sources).toHaveLength(1);});
+ it('빠른 화면 전환에서도 같은 곡을 겹쳐 만들지 않고 앞 소스의 종료를 예약한다',async()=>{const s=await sound(),c=Context.latest;s.music('map');s.music('map');expect(c.sources).toHaveLength(1);s.music('battle');s.music('map');expect(c.sources).toHaveLength(3);expect(c.sources.slice(0,2).every(n=>n.stopped!==undefined&&n.stopped<.7)).toBe(true);expect(c.sources[2].stopped).toBeUndefined();expect(c.sources[2].loopStart).toBe(4);expect(c.sources[2].loopEnd).toBe(80);s.music(undefined);expect(c.sources.every(n=>n.stopped!==undefined)).toBe(true);});
+ it('징글은 한번만 재생하고 입력 때 되살리지 않는다',async()=>{const s=await sound();s.music('victory');const c=Context.latest,n=c.sources[0];expect(n.loop).toBe(false);n.onended?.();s.unlock();expect(c.sources).toHaveLength(1);});
+ it('없는 곡은 경고만 남기고 현재 곡을 끊지 않는다',async()=>{const s=await sound();s.music('map');s.music('missing');expect(Context.latest.sources).toHaveLength(1);expect(Context.latest.sources[0].stopped).toBeUndefined();expect(s.problems()).toContain('bgm:missing (등록된 곡 없음)');});
+ it('출처 없는 항목·잘못된 반복 구간은 건너뛰고 제작자 B 명의와 표기를 보존한다',async()=>{const bad=structuredClone(fixture);bad.sfx!.bad={...entry,license:''};bad.bgm!.broken={...entry,loopStart:50,loopEnd:20};vi.stubGlobal('fetch',async()=>({ok:true,json:async()=>bad,arrayBuffer:async()=>new TextEncoder().encode(JSON.stringify(bad)).buffer}));const s=await sound();expect(s.problems()).toHaveLength(2);expect(s.credits()).toContainEqual(expect.objectContaining({id:'victory',author:'제작자 B',credit:'음악: 제작자 B'}));});
+});

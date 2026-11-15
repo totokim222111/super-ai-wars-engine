@@ -1,0 +1,11 @@
+import {describe,it,expect} from 'vitest';
+import {arena} from './core/helpers';
+import {createBattle,apply,availableActions,snapshot,restore,nextAICommand} from '../src/core';
+import {stageContent} from '../src/core/stage-content';
+describe('stage balance extensions',()=>{
+ it('keeps shared catalogs immutable and restores stage-specific ammo removal',()=>{const s=arena(),id=s.content.mechs[0].id,w=s.content.weapons[0].id,original=s.content.mechs[0].hp;s.content.weapons[0].ammo=4;s.stage.contentOverrides={mechs:{[id]:{hp:original+900}},weapons:{[w]:{ammo:null} as never}};const a=createBattle(s.content,s.stage,1);expect(a.units[0].hp).toBe(original+900);expect(s.content.mechs[0].hp).toBe(original);expect(a.content.weapons[0].ammo).toBeUndefined();expect(restore(s.content,s.stage,snapshot(a)).units).toEqual(a.units);expect(stageContent(s.content,{...s.stage,contentOverrides:undefined})).toBe(s.content);});
+ it('limits positive combat morale across a complete exchange without limiting round recovery',()=>{const s=arena((c,st)=>{c.rules.combatMoraleCap=3;c.rules.morale.hit=2;c.rules.morale.kill=3;c.rules.morale.allyKill=2;for(const w of c.weapons){w.range=[1,8];w.hit=999;w.power=99999;}st.units[1].x=2;st.units[1].y=2;});const u=s.units.find(u=>u.side==='player')!,before=u.morale,cmd=availableActions(s,u.id).find(c=>c.type==='attack')!;const r=apply(s,cmd);expect(r.events.filter(e=>e.type==='morale'&&e.unitId===u.id).reduce((n,e)=>n+(e.type==='morale'?e.after-e.before:0),0)).toBeLessThanOrEqual(3);expect(r.state.units.find(v=>v.id===u.id)!.morale).toBeLessThanOrEqual(before+3);});
+ it('round-robin policy gives the other unit its first action before a second action',()=>{const s=arena((c,st)=>{c.rules.actions={stat:'skill',threshold:130,count:2};c.rules.ai.resources={ammoBonus:0,reserveFinisher:false,reservePenalty:0,roundRobin:true};for(const p of c.pilots)p.stats.skill=140;st.units.push({...st.units[0],id:'p2',x:1,y:3});});s.units[0].actionsSpent=1;s.units[0].actionsRemaining=1;const c=nextAICommand(s)!;expect('unitId'in c&&c.unitId).toBe('p2');});
+ it('rejects malformed support progress instead of accepting it from a save',()=>{const s=arena();s.units[0].supportExperience=-1;expect(()=>restore(s.content,s.stage,snapshot(s))).toThrow('supportExperience');});
+});
+

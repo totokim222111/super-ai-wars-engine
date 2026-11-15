@@ -1,0 +1,172 @@
+{
+  "scout": {
+    "art": "mech-scout",
+    "icon": "mech-scout",
+    "pilotCast": "hero",
+    "faces": "left",
+    "height": 335,
+    "anchors": {
+      "muzzle": [
+        0.15,
+        0.42
+      ],
+      "hand": [
+        0.23,
+        0.55
+      ],
+      "core": [
+        0.5,
+        0.5
+      ],
+      "head": [
+        0.5,
+        0.2
+      ],
+      "foot": [
+        0.5,
+        0.91
+      ]
+    },
+    "tacticalForms": {
+      "기본": {
+        "art": "mech-scout",
+        "icon": "mech-scout",
+        "anchors": {
+          "muzzle": [
+            0.15,
+            0.42
+          ],
+          "hand": [
+            0.23,
+            0.55
+          ],
+          "core": [
+            0.5,
+            0.5
+          ],
+          "head": [
+            0.5,
+            0.2
+          ],
+          "foot": [
+            0.5,
+            0.91
+          ]
+        }
+      },
+      "방호": {
+        "art": "mech-guard",
+        "icon": "mech-guard",
+        "anchors": {
+          "muzzle": [
+            0.15,
+            0.42
+          ],
+          "hand": [
+            0.23,
+            0.55
+          ],
+          "core": [
+            0.5,
+            0.5
+          ],
+          "head": [
+            0.5,
+            0.2
+          ],
+          "foot": [
+            0.5,
+            0.91
+          ]
+        }
+      }
+    }
+  },
+  "guard": {
+    "art": "mech-guard",
+    "icon": "mech-guard",
+    "pilotCast": "hero",
+    "faces": "left",
+    "height": 335,
+    "anchors": {
+      "muzzle": [
+        0.15,
+        0.42
+      ],
+      "hand": [
+        0.23,
+        0.55
+      ],
+      "core": [
+        0.5,
+        0.5
+      ],
+      "head": [
+        0.5,
+        0.2
+      ],
+      "foot": [
+        0.5,
+        0.91
+      ]
+    }
+  },
+  "helper": {
+    "art": "mech-loop",
+    "icon": "mech-loop",
+    "pilotCast": "loop",
+    "faces": "left",
+    "height": 335,
+    "anchors": {
+      "muzzle": [
+        0.15,
+        0.42
+      ],
+      "hand": [
+        0.23,
+        0.55
+      ],
+      "core": [
+        0.5,
+        0.5
+      ],
+      "head": [
+        0.5,
+        0.2
+      ],
+      "foot": [
+        0.5,
+        0.91
+      ]
+    }
+  },
+  "dummy": {
+    "art": "mech-dummy",
+    "icon": "mech-dummy",
+    "pilotCast": "dummy",
+    "faces": "left",
+    "height": 335,
+    "anchors": {
+      "muzzle": [
+        0.15,
+        0.42
+      ],
+      "hand": [
+        0.23,
+        0.55
+      ],
+      "core": [
+        0.5,
+        0.5
+      ],
+      "head": [
+        0.5,
+        0.2
+      ],
+      "foot": [
+        0.5,
+        0.91
+      ]
+    }
+  }
+}

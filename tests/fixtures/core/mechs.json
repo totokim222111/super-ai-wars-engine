@@ -1,0 +1,151 @@
+[
+  {
+    "id": "mech-a",
+    "name": "시험기 A",
+    "hp": 6800,
+    "en": 150,
+    "armor": 900,
+    "mobility": 110,
+    "move": 5,
+    "moveType": [
+      "air",
+      "ground"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "weapons": [
+      "blade",
+      "rifle",
+      "beam",
+      "burst"
+    ]
+  },
+  {
+    "id": "mech-b",
+    "name": "시험기 B",
+    "hp": 7600,
+    "en": 140,
+    "armor": 1000,
+    "mobility": 100,
+    "move": 4,
+    "moveType": [
+      "ground"
+    ],
+    "size": "L",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "C",
+      "space": "B"
+    },
+    "weapons": [
+      "blade",
+      "rifle",
+      "cannon"
+    ]
+  },
+  {
+    "id": "mech-c",
+    "name": "시험기 C",
+    "hp": 6800,
+    "en": 160,
+    "armor": 850,
+    "mobility": 115,
+    "move": 5,
+    "moveType": [
+      "ground",
+      "sea"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "S",
+      "space": "B"
+    },
+    "weapons": [
+      "blade",
+      "rifle",
+      "beam",
+      "cannon"
+    ]
+  },
+  {
+    "id": "mech-d",
+    "name": "시험기 D",
+    "hp": 4400,
+    "en": 120,
+    "armor": 750,
+    "mobility": 100,
+    "move": 4,
+    "moveType": [
+      "ground",
+      "sea"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "weapons": [
+      "blade",
+      "rifle",
+      "beam"
+    ]
+  },
+  {
+    "id": "mech-e",
+    "name": "시험기 E",
+    "hp": 4000,
+    "en": 120,
+    "armor": 700,
+    "mobility": 115,
+    "move": 5,
+    "moveType": [
+      "air"
+    ],
+    "size": "S",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "weapons": [
+      "blade",
+      "rifle"
+    ]
+  },
+  {
+    "id": "mech-f",
+    "name": "시험기 F",
+    "hp": 4900,
+    "en": 140,
+    "armor": 850,
+    "mobility": 90,
+    "move": 3,
+    "moveType": [
+      "ground",
+      "sea"
+    ],
+    "size": "L",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "weapons": [
+      "rifle",
+      "cannon",
+      "burst"
+    ]
+  }
+]

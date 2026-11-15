@@ -1,0 +1,63 @@
+[
+  {
+    "id": "mobility-bonus",
+    "name": "이동력 +1",
+    "effects": [
+      {
+        "type": "moveAdd",
+        "value": 1
+      }
+    ],
+    "desc": "이동력 상시 +1"
+  },
+  {
+    "id": "air-bonus",
+    "name": "공 적응 S",
+    "effects": [
+      {
+        "type": "adaptSet",
+        "value": {
+          "air": "S"
+        }
+      }
+    ],
+    "desc": "공 적응을 S로 강화"
+  },
+  {
+    "id": "sea-bonus",
+    "name": "해 적응 S",
+    "effects": [
+      {
+        "type": "adaptSet",
+        "value": {
+          "sea": "S"
+        }
+      }
+    ],
+    "desc": "해 적응을 S로 강화"
+  },
+  {
+    "id": "range-bonus",
+    "name": "사거리 +1",
+    "effects": [
+      {
+        "type": "rangeAdd",
+        "value": 1
+      }
+    ],
+    "desc": "MAP 이외 무기 최대 사거리 +1"
+  },
+  {
+    "id": "sp-bonus",
+    "name": "SP +20",
+    "effects": [
+      {
+        "type": "statAdd",
+        "value": {
+          "sp": 20
+        }
+      }
+    ],
+    "desc": "최대 SP +20"
+  }
+]

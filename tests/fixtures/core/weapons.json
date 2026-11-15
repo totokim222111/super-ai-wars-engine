@@ -1,0 +1,112 @@
+[
+  {
+    "id": "blade",
+    "name": "시험 근접검",
+    "kind": "melee",
+    "power": 1900,
+    "range": [
+      1,
+      1
+    ],
+    "hit": 10,
+    "crit": 10,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "anim": "melee-basic",
+    "icon": "melee"
+  },
+  {
+    "id": "rifle",
+    "name": "시험 탄수포",
+    "kind": "shoot",
+    "power": 1750,
+    "range": [
+      1,
+      4
+    ],
+    "hit": 5,
+    "crit": 5,
+    "ammo": 10,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "B",
+      "space": "B"
+    },
+    "anim": "shoot-basic",
+    "icon": "shoot"
+  },
+  {
+    "id": "beam",
+    "name": "시험 EN포",
+    "kind": "shoot",
+    "power": 2050,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 0,
+    "crit": 5,
+    "en": 18,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "C",
+      "space": "B"
+    },
+    "anim": "beam-basic",
+    "icon": "beam"
+  },
+  {
+    "id": "cannon",
+    "name": "시험 장거리포",
+    "kind": "shoot",
+    "power": 2300,
+    "range": [
+      3,
+      6
+    ],
+    "hit": 0,
+    "crit": 10,
+    "ammo": 8,
+    "postMove": false,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "anim": "missile-basic",
+    "icon": "missile"
+  },
+  {
+    "id": "burst",
+    "name": "시험 기력포",
+    "kind": "shoot",
+    "power": 2700,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 0,
+    "crit": 15,
+    "en": 30,
+    "moraleReq": 115,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    },
+    "anim": "finisher-basic",
+    "icon": "beam"
+  }
+]

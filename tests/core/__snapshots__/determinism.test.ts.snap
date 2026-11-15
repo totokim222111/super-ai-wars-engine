@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`harbor deterministic golden > seed1 repeat, full command replay and intermediate JSON restore are byte-identical 1`] = `
+{
+  "outcome": "victory",
+  "round": 7,
+  "survivors": [
+    {
+      "hp": 4490,
+      "id": "p-2",
+    },
+    {
+      "hp": 2506,
+      "id": "p-3",
+    },
+  ],
+}
+`;

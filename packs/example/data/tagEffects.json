@@ -1,0 +1,14 @@
+[
+  {
+    "kind": "aura",
+    "tag": "encourage",
+    "range": 1,
+    "atoms": [
+      {
+        "type": "hitAdd",
+        "value": 5
+      }
+    ],
+    "en": 3
+  }
+]

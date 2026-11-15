@@ -1,0 +1,47 @@
+{
+  "combos": [
+    {
+      "name": "산책의 합주",
+      "participants": [
+        {
+          "cast": "hero",
+          "speech": {
+            "text": "하나, 둘!",
+            "mood": "attack"
+          }
+        },
+        {
+          "cast": "loop",
+          "speech": {
+            "text": "발맞춰서!",
+            "mood": "default"
+          }
+        },
+        {
+          "cast": "buddy",
+          "speech": {
+            "text": "저도 같이요!",
+            "mood": "default"
+          }
+        }
+      ],
+      "finish": {
+        "cast": "hero",
+        "speech": {
+          "text": "함께 가자!",
+          "mood": "attack"
+        }
+      },
+      "binding": {
+        "ids": [
+          "walk-trio"
+        ],
+        "participants": [
+          "hero",
+          "loop",
+          "buddy"
+        ]
+      }
+    }
+  ]
+}

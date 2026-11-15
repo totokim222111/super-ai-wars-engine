@@ -1,0 +1,206 @@
+[
+  {
+    "id": "pulse",
+    "name": "빛 알갱이",
+    "kind": "shoot",
+    "power": 2600,
+    "en": 5,
+    "range": [
+      1,
+      4
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot"
+  },
+  {
+    "id": "blade",
+    "name": "안전 칼날",
+    "kind": "melee",
+    "power": 2900,
+    "en": 0,
+    "range": [
+      1,
+      1
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "melee"
+  },
+  {
+    "id": "pebble",
+    "name": "말랑 탄환",
+    "kind": "shoot",
+    "power": 1100,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot",
+    "ammo": 7
+  },
+  {
+    "id": "practice-round",
+    "name": "연습탄",
+    "kind": "shoot",
+    "power": 1600,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot",
+    "ammo": 8
+  },
+  {
+    "id": "trio-beam",
+    "name": "산책의 합주",
+    "kind": "shoot",
+    "power": 3500,
+    "en": 30,
+    "range": [
+      1,
+      4
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot",
+    "moraleReq": 100
+  },
+  {
+    "id": "paint-tag",
+    "name": "표식 탄",
+    "kind": "shoot",
+    "power": 400,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot",
+    "ammo": 2,
+    "en": 10,
+    "fixedPower": true,
+    "special": {
+      "kind": "status",
+      "target": "enemy",
+      "rounds": 2,
+      "atoms": [
+        {
+          "type": "hitAdd",
+          "value": -10
+        },
+        {
+          "type": "moraleOffset",
+          "value": -5
+        }
+      ],
+      "cooldown": 2,
+      "label": "표식!"
+    }
+  },
+  {
+    "id": "echo-copy",
+    "name": "작은 메아리",
+    "kind": "shoot",
+    "power": 400,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot",
+    "ammo": 2,
+    "en": 10,
+    "fixedPower": true,
+    "special": {
+      "kind": "summon",
+      "limit": 2,
+      "hpPct": 25,
+      "cooldown": 2,
+      "label": "메아리!"
+    }
+  },
+  {
+    "id": "second-beat",
+    "name": "한 박자 더",
+    "kind": "shoot",
+    "power": 400,
+    "range": [
+      1,
+      3
+    ],
+    "hit": 50,
+    "crit": 0,
+    "postMove": true,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "icon": "shoot",
+    "ammo": 2,
+    "en": 10,
+    "fixedPower": true,
+    "special": {
+      "kind": "extraAction",
+      "cooldown": 3,
+      "label": "추가 행동!"
+    }
+  }
+]

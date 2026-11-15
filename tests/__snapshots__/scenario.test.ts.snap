@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SAI compiler > snapshots reference diagnostics: area 1`] = `[Error: refs.sai:1:27: 존재하지 않는 영역 'absent']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: character 1`] = `[Error: refs.sai:2:8: 존재하지 않는 화자 'missing']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: condition 1`] = `[Error: refs.sai:2:12: 존재하지 않는 유닛 'missing']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: effect 1`] = `[Error: refs.sai:2:18: 존재하지 않는 효과 'missing']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: expression 1`] = `[Error: refs.sai:2:12: 화자 'gem'에게 없는 표정 'angry']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: part 1`] = `[Error: refs.sai:2:13: 존재하지 않는 파츠 'missing']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: tag 1`] = `[Error: refs.sai:2:11: 존재하지 않는 태그 'missing']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: unit 1`] = `[Error: refs.sai:2:11: 존재하지 않는 유닛 'missing']`;
+
+exports[`SAI compiler > snapshots reference diagnostics: wave 1`] = `[Error: refs.sai:2:13: 존재하지 않는 웨이브 'absent']`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: bad trigger 1`] = `[Error: bad.sai:1:1: 트리거 문법이 잘못되었습니다 'round zero']`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: bare else 1`] = `[Error: bad.sai:2:3: else/end의 들여쓰기가 if와 같아야 합니다]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: extra arguments 1`] = `[Error: bad.sai:2:3: 'win' 명령의 인수 또는 문법이 잘못되었습니다]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: missing end 1`] = `[Error: bad.sai:2:3: if 블록을 닫는 end가 필요합니다]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: odd indentation 1`] = `[Error: bad.sai:2:4: 들여쓰기는 공백 2칸 단위여야 합니다]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: over-indented block 1`] = `[Error: bad.sai:2:5: 들여쓰기는 공백 2칸이어야 합니다]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: tab indentation 1`] = `[Error: bad.sai:2:1: 탭 대신 공백 2칸으로 들여쓰기 하세요]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: unclosed string 1`] = `[Error: bad.sai:2:11: 큰따옴표 문자열이 닫히지 않았거나 이스케이프가 잘못되었습니다]`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: unknown command 1`] = `[Error: bad.sai:2:3: 알 수 없는 명령 'explode']`;
+
+exports[`SAI compiler > snapshots syntax diagnostics: unquoted dialogue 1`] = `[Error: bad.sai:2:11: 문장은 큰따옴표로 감싸야 합니다]`;

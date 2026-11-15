@@ -1,0 +1,137 @@
+{
+  "cast": [
+    "hero",
+    "loop",
+    "dummy"
+  ],
+  "fighters": [
+    {
+      "id": "hero",
+      "side": "ally",
+      "name": "산책호",
+      "pilot": "모험가",
+      "hp": 6000,
+      "hpMax": 6000,
+      "en": 120,
+      "enMax": 120,
+      "height": 335,
+      "faces": "left",
+      "art": "mech-scout",
+      "cast": "hero"
+    },
+    {
+      "id": "dummy",
+      "side": "enemy",
+      "name": "연습 인형",
+      "pilot": "연습 인형",
+      "hp": 2000,
+      "hpMax": 2000,
+      "en": 120,
+      "enMax": 120,
+      "height": 335,
+      "faces": "right",
+      "art": "mech-dummy",
+      "cast": "dummy"
+    }
+  ],
+  "roles": {
+    "ally": "hero",
+    "enemy": "dummy",
+    "player": "hero",
+    "partnerArt": "mech-loop",
+    "battleBackground": "bg-arena"
+  },
+  "moves": [
+    {
+      "label": "빛 알갱이",
+      "kind": "beam",
+      "strikes": [
+        {
+          "attacker": "hero",
+          "target": "dummy",
+          "weapon": {
+            "name": "빛 알갱이",
+            "cost": 5,
+            "anim": {
+              "template": "beam",
+              "color": "#7fe9f7"
+            }
+          },
+          "outcome": {
+            "hit": true,
+            "damage": 1000
+          }
+        }
+      ]
+    },
+    {
+      "label": "빛 알갱이",
+      "kind": "beam",
+      "strikes": [
+        {
+          "attacker": "hero",
+          "target": "dummy",
+          "weapon": {
+            "name": "빛 알갱이",
+            "cost": 5,
+            "anim": {
+              "template": "beam",
+              "color": "#7fe9f7"
+            }
+          },
+          "outcome": {
+            "hit": true,
+            "damage": 1000
+          }
+        }
+      ]
+    }
+  ],
+  "situations": [
+    {
+      "label": "명중",
+      "about": "기본 공격과 게이지 감소",
+      "strikes": [
+        {
+          "attacker": "hero",
+          "target": "dummy",
+          "weapon": {
+            "name": "빛 알갱이",
+            "cost": 5,
+            "anim": {
+              "template": "beam",
+              "color": "#7fe9f7"
+            }
+          },
+          "outcome": {
+            "hit": true,
+            "damage": 1000
+          }
+        }
+      ]
+    }
+  ],
+  "opening": [
+    {
+      "do": "bg",
+      "image": "bg-hangar"
+    },
+    {
+      "do": "enter",
+      "who": "hero",
+      "side": "right"
+    },
+    {
+      "do": "say",
+      "who": "hero",
+      "text": "잠깐 산책하고 올게요."
+    }
+  ],
+  "spirits": [
+    {
+      "name": "집중",
+      "kind": "focus",
+      "color": "#7fe9f7"
+    }
+  ]
+}

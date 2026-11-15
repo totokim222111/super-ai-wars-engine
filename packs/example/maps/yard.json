@@ -1,0 +1,10 @@
+{
+  "ground": "floor",
+  "color": "#263645",
+  "tiles": {
+    "plain": {
+      "role": "plain",
+      "plainDetail": false
+    }
+  }
+}

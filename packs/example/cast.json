@@ -1,0 +1,304 @@
+{
+  "hero": {
+    "name": "모험가",
+    "aliases": [
+      "모험가"
+    ],
+    "color": "#7fe9f7",
+    "height": 650,
+    "bust": "bust-hero",
+    "moods": {
+      "default": "bust-hero"
+    },
+    "face": [
+      0.18,
+      0.02,
+      0.64,
+      0.42
+    ],
+    "battleLines": {
+      "mode": "sequence",
+      "attack": [
+        {
+          "text": "자, 한 걸음 더!",
+          "mood": "attack"
+        },
+        {
+          "text": "빈틈을 찾았어.",
+          "mood": "serious"
+        }
+      ],
+      "finisher": [
+        {
+          "text": "이번엔 끝까지 간다!",
+          "mood": "attack"
+        }
+      ],
+      "hitLight": [
+        {
+          "text": "괜찮아, 계속해 보자.",
+          "mood": "hit"
+        }
+      ],
+      "hitHeavy": [
+        {
+          "text": "아직 버틸 수 있어.",
+          "mood": "serious"
+        }
+      ],
+      "dodge": [
+        {
+          "text": "조금 옆으로!",
+          "mood": "smile"
+        }
+      ],
+      "guard": [
+        {
+          "text": "여기서 막을게.",
+          "mood": "serious"
+        }
+      ],
+      "defeated": [
+        {
+          "text": "잠깐 쉬었다 갈게.",
+          "mood": "sad"
+        }
+      ],
+      "victory": [
+        {
+          "text": "좋아, 다음으로 가자.",
+          "mood": "smile"
+        }
+      ],
+      "weapons": {
+        "blade": [
+          {
+            "text": "가까이서 간다!",
+            "mood": "attack"
+          }
+        ]
+      }
+    },
+    "moodSheet": {
+      "art": "bust-hero-moods",
+      "rect": [
+        0.18,
+        0,
+        0.64,
+        0.42
+      ],
+      "cols": 4,
+      "rows": 3,
+      "order": [
+        "default",
+        "smile",
+        "laugh",
+        "attack",
+        "serious",
+        "hit",
+        "shock",
+        "sad",
+        "angry",
+        "shy",
+        "sparkle"
+      ]
+    },
+    "theme": "example-hero",
+    "themePriority": 1
+  },
+  "loop": {
+    "name": "루프",
+    "aliases": [
+      "루프"
+    ],
+    "color": "#7fe9f7",
+    "height": 335,
+    "bust": "portrait-loop",
+    "moods": {
+      "default": "portrait-loop",
+      "smile": "portrait-loop",
+      "laugh": "portrait-loop",
+      "attack": "portrait-loop",
+      "serious": "portrait-loop",
+      "hit": "portrait-loop",
+      "shock": "portrait-loop",
+      "sad": "portrait-loop",
+      "angry": "portrait-loop",
+      "shy": "portrait-loop"
+    },
+    "face": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "battleLines": {
+      "resupply": [
+        {
+          "text": "필요한 건 여기 있어요.",
+          "mood": "default"
+        }
+      ],
+      "repair": [
+        {
+          "text": "조금 쉬면 괜찮을 거예요.",
+          "mood": "default"
+        }
+      ]
+    },
+    "theme": "example-partner",
+    "themePriority": 1
+  },
+  "dummy": {
+    "name": "연습 인형",
+    "aliases": [
+      "연습 인형"
+    ],
+    "color": "#ff6980",
+    "height": 335,
+    "bust": "portrait-dummy",
+    "moods": {
+      "default": "portrait-dummy",
+      "smile": "portrait-dummy",
+      "laugh": "portrait-dummy",
+      "attack": "portrait-dummy",
+      "serious": "portrait-dummy",
+      "hit": "portrait-dummy",
+      "shock": "portrait-dummy",
+      "sad": "portrait-dummy",
+      "angry": "portrait-dummy",
+      "shy": "portrait-dummy"
+    },
+    "face": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "battleLines": {
+      "mode": "random",
+      "attack": [
+        {
+          "text": "연습 시작.",
+          "mood": "attack"
+        },
+        {
+          "text": "목표 확인.",
+          "mood": "default"
+        }
+      ],
+      "hitLight": [
+        {
+          "text": "충격 기록.",
+          "mood": "hit"
+        }
+      ],
+      "hitHeavy": [
+        {
+          "text": "자세를 다시 잡습니다.",
+          "mood": "serious"
+        }
+      ],
+      "dodge": [
+        {
+          "text": "옆으로 이동.",
+          "mood": "smile"
+        }
+      ],
+      "guard": [
+        {
+          "text": "방어 동작 확인.",
+          "mood": "default"
+        }
+      ],
+      "defeated": [
+        {
+          "text": "연습을 마칩니다.",
+          "mood": "hit"
+        }
+      ],
+      "opponents": {
+        "hero": {
+          "attack": [
+            {
+              "text": "준비됐나요?",
+              "mood": "attack"
+            }
+          ]
+        }
+      }
+    },
+    "theme": "example-partner",
+    "themePriority": 1
+  },
+  "buddy": {
+    "name": "점",
+    "aliases": [
+      "점"
+    ],
+    "color": "#7fe9f7",
+    "height": 335,
+    "bust": "portrait-loop",
+    "moods": {
+      "default": "portrait-loop",
+      "smile": "portrait-loop",
+      "laugh": "portrait-loop",
+      "attack": "portrait-loop",
+      "serious": "portrait-loop",
+      "hit": "portrait-loop",
+      "shock": "portrait-loop",
+      "sad": "portrait-loop",
+      "angry": "portrait-loop",
+      "shy": "portrait-loop"
+    },
+    "face": [
+      0,
+      0,
+      1,
+      1
+    ]
+  },
+  "echo": {
+    "name": "메아리",
+    "aliases": [
+      "메아리"
+    ],
+    "color": "#ff6980",
+    "height": 335,
+    "bust": "portrait-dummy",
+    "moods": {
+      "default": "portrait-dummy",
+      "smile": "portrait-dummy",
+      "laugh": "portrait-dummy",
+      "attack": "portrait-dummy",
+      "serious": "portrait-dummy",
+      "hit": "portrait-dummy",
+      "shock": "portrait-dummy",
+      "sad": "portrait-dummy",
+      "angry": "portrait-dummy",
+      "shy": "portrait-dummy"
+    },
+    "face": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "battleLines": {
+      "resupply": [
+        {
+          "text": "다시 가득 채웠어요.",
+          "mood": "default"
+        }
+      ],
+      "cheer": [
+        {
+          "text": "천천히, 같이 가요!",
+          "mood": "default"
+        }
+      ]
+    },
+    "theme": "example-partner",
+    "themePriority": 1
+  }
+}

@@ -1,0 +1,87 @@
+[
+  {
+    "id": "support-fire",
+    "name": "원호공격",
+    "effects": [],
+    "levels": {
+      "1": [
+        {
+          "type": "supportAttack",
+          "value": 1
+        }
+      ],
+      "2": [
+        {
+          "type": "supportAttack",
+          "value": 2
+        }
+      ],
+      "3": [
+        {
+          "type": "supportAttack",
+          "value": 3
+        }
+      ]
+    },
+    "desc": "인접 아군의 공격에 원호 · 레벨당 1회"
+  },
+  {
+    "id": "support-guard",
+    "name": "원호방어",
+    "effects": [],
+    "levels": {
+      "1": [
+        {
+          "type": "supportDefense",
+          "value": 1
+        }
+      ],
+      "2": [
+        {
+          "type": "supportDefense",
+          "value": 2
+        }
+      ],
+      "3": [
+        {
+          "type": "supportDefense",
+          "value": 3
+        }
+      ]
+    },
+    "desc": "인접 아군 대신 방어 · 레벨당 1회"
+  },
+  {
+    "id": "momentum",
+    "name": "분투",
+    "effects": [
+      {
+        "type": "moraleGainAdd",
+        "value": 1
+      }
+    ],
+    "desc": "기력 상승 시 추가 +1"
+  },
+  {
+    "id": "resolve",
+    "name": "의지",
+    "effects": [
+      {
+        "type": "moraleCapAdd",
+        "value": 20
+      }
+    ],
+    "desc": "기력 상한 +20"
+  },
+  {
+    "id": "renewal",
+    "name": "순환",
+    "effects": [
+      {
+        "type": "spRegen",
+        "value": 5
+      }
+    ],
+    "desc": "아군 페이즈 시작마다 SP +5"
+  }
+]

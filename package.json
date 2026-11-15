@@ -1,0 +1,26 @@
+{
+  "name": "srw-indexed-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "node tools/art_info.mjs && node tools/story_outlines.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "dev:lan": "vite --host 0.0.0.0",
+    "preview": "vite preview --host 127.0.0.1",
+    "preview:lan": "vite preview --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "postbuild": "node tools/artifact.mjs",
+    "test": "vitest run && python -m unittest discover -s tools/tests -v && npm run pack:check",
+    "typecheck": "tsc --noEmit",
+    "sim": "node tools/sim.mjs",
+    "pack:check": "node tools/pack_check.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "playwright-core": "^1.56.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

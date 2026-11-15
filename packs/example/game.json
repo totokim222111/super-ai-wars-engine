@@ -1,0 +1,382 @@
+{
+  "id": "example",
+  "title": "작은 산책",
+  "subtitle": "문을 열고, 약속 하나",
+  "terms": {
+    "en": "에너지",
+    "morale": "기력",
+    "funds": "자금",
+    "training": "훈련 포인트",
+    "trainingShort": "훈련",
+    "resultExperience": "경험치",
+    "experience": "경험치",
+    "upgrade": "개조",
+    "scan": "정찰"
+  },
+  "players": "players.json",
+  "defaultMap": "yard",
+  "defaultPilot": "dummy",
+  "anonymousPilots": [
+    "dummy"
+  ],
+  "pilotCasts": {
+    "hero": "hero",
+    "loop": "loop",
+    "dummy": "dummy",
+    "buddy": "buddy",
+    "echo": "echo"
+  },
+  "menuArt": "portrait-loop",
+  "economy": "economy.json",
+  "training": "training.json",
+  "maps": {
+    "yard": "maps/yard.json"
+  },
+  "titleArt": {
+    "background": "bg-hangar",
+    "character": "bust-hero"
+  },
+  "art": {
+    "base": "art/",
+    "files": {
+      "bust-hero": "art/bust-hero.webp",
+      "portrait-loop": "art/portrait-loop.webp",
+      "portrait-dummy": "art/portrait-dummy.webp",
+      "mech-scout": "art/mech-scout.webp",
+      "mech-guard": "art/mech-guard.webp",
+      "mech-loop": "art/mech-loop.webp",
+      "mech-dummy": "art/mech-dummy.webp",
+      "bg-hangar": "art/bg-hangar.webp",
+      "bg-harbor": "art/bg-harbor.webp",
+      "bg-arena": "art/bg-arena.webp",
+      "floor": "art/floor.webp",
+      "bust-hero-moods": "art/bust-hero-moods.webp"
+    },
+    "metadata": "art-info.json",
+    "focus": {
+      "bg-hangar": [
+        0.5,
+        0.33
+      ]
+    }
+  },
+  "audio": {
+    "base": "audio/",
+    "pack": "audio/pack.json",
+    "credits": "HydroGene · nene · Kenney · Juhani Junkala / CC0 1.0. audio/LICENSES.md 참조"
+  },
+  "music": {
+    "title": "battle",
+    "map": "battle",
+    "enemy-phase": "battle",
+    "battle": "battle",
+    "intermission": "battle",
+    "victory": "battle",
+    "gameover": "battle",
+    "hope": "battle",
+    "upgrade": "screen-upgrade",
+    "save": "screen-save"
+  },
+  "fallbacks": {
+    "ally": {
+      "art": "mech-scout",
+      "icon": "mech-scout",
+      "cast": "hero",
+      "faces": "left",
+      "height": 335,
+      "anchors": {
+        "muzzle": [
+          0.15,
+          0.42
+        ],
+        "hand": [
+          0.23,
+          0.55
+        ],
+        "core": [
+          0.5,
+          0.5
+        ],
+        "head": [
+          0.5,
+          0.2
+        ],
+        "foot": [
+          0.5,
+          0.91
+        ]
+      }
+    },
+    "enemy": {
+      "art": "mech-dummy",
+      "icon": "mech-dummy",
+      "cast": "dummy",
+      "faces": "right",
+      "height": 335,
+      "anchors": {
+        "muzzle": [
+          0.15,
+          0.42
+        ],
+        "hand": [
+          0.23,
+          0.55
+        ],
+        "core": [
+          0.5,
+          0.5
+        ],
+        "head": [
+          0.5,
+          0.2
+        ],
+        "foot": [
+          0.5,
+          0.91
+        ]
+      }
+    },
+    "terrain": "floor",
+    "background": "bg-arena"
+  },
+  "episodes": [
+    {
+      "id": "ep01",
+      "title": "1. 같이 가기",
+      "stage": "lesson-1",
+      "story": "story/ep01.story",
+      "objectives": {
+        "win": [
+          "연습 인형을 정지시키기"
+        ],
+        "lose": [
+          "산책호 파손"
+        ]
+      },
+      "battleBackground": "bg-arena"
+    },
+    {
+      "id": "ep02",
+      "title": "2. 작은 약속",
+      "stage": "lesson-2",
+      "story": "story/ep02.story",
+      "objectives": {
+        "win": [
+          "연습 인형을 정지시키기"
+        ],
+        "lose": [
+          "산책호 파손"
+        ]
+      },
+      "battleBackground": "bg-arena"
+    }
+  ],
+  "ending": {
+    "episode": "ep02",
+    "scene": "엔딩"
+  },
+  "credits": [
+    {
+      "title": "작은 산책",
+      "detail": "중립적인 오리지널 예제 대본 · PLEASE License"
+    },
+    {
+      "title": "그림",
+      "detail": "제작자의 완성 그림 재사용 · 인물·회사 패러디 그림 제외"
+    }
+  ],
+  "story": {
+    "affection": [
+      {
+        "id": "loop"
+      }
+    ]
+  },
+  "gallery": "gallery.json",
+  "rules": {
+    "spiritAfterAction": false
+  },
+  "mapHints": {
+    "order": [
+      "victory",
+      "optional",
+      "danger"
+    ],
+    "persistent": true
+  },
+  "battleRules": {
+    "actions": {
+      "stat": "skill",
+      "threshold": 130,
+      "count": 2,
+      "extraMax": 1
+    },
+    "critical": {
+      "stat": "skill",
+      "coefficient": 0.4,
+      "min": 5,
+      "max": 75
+    },
+    "skillActivation": {
+      "stat": "skill",
+      "coefficient": 0.2,
+      "min": 5,
+      "max": 25
+    },
+    "enRegenPerRound": 5,
+    "recoveryTiming": "phase",
+    "weaponUpgrade": {
+      "mode": "percent",
+      "rate": 0.1
+    },
+    "upgradeLimits": {
+      "weapons": {
+        "max": 15,
+        "newGamePlusMax": 30,
+        "costs": [
+          100,
+          150,
+          200,
+          250,
+          300,
+          350,
+          400,
+          450,
+          500,
+          550,
+          600,
+          650,
+          700,
+          750,
+          800,
+          850,
+          900,
+          950,
+          1000,
+          1050,
+          1100,
+          1150,
+          1200,
+          1250,
+          1300,
+          1350,
+          1400,
+          1450,
+          1500,
+          1550
+        ]
+      }
+    },
+    "newGamePlus": {
+      "carry": [
+        "upgrades",
+        "credits",
+        "parts",
+        "levels",
+        "training"
+      ],
+      "enemyUpgradeOffsetPerCycle": 2
+    },
+    "ai": {
+      "resources": {
+        "ammoBonus": 0.15,
+        "reserveFinisher": true,
+        "reservePenalty": 0.5
+      }
+    },
+    "consumablePolicy": "consume",
+    "retryOnDefeat": {
+      "keep": [
+        "exp",
+        "credits"
+      ]
+    },
+    "enemyUpgrades": {
+      "armorDivisor": 2,
+      "mobilityDivisor": 2,
+      "weaponDivisor": 2
+    }
+  },
+  "unitInfo": {
+    "stats": {
+      "skill": {
+        "name": "추론",
+        "desc": "두 번 행동할 기준과 크리티컬·확률 기술 발동에 쓰는 능력입니다."
+      }
+    }
+  },
+  "battleDialogue": "battle-lines.json",
+  "musicRules": {
+    "slots": {
+      "example-hero": "battle",
+      "example-partner": "battle",
+      "screen-upgrade": "boss",
+      "screen-save": "battle",
+      "battle-opening": "boss",
+      "story-calm": "battle",
+      "story-tense": "boss"
+    },
+    "battleOpening": {
+      "slot": "battle-opening",
+      "seconds": 1.2
+    },
+    "bossEntrance": "story-tense",
+    "story": {
+      "default": "story-calm",
+      "tags": {
+        "calm": "story-calm",
+        "tense": "story-tense"
+      },
+      "sceneTags": {
+        "ep01:도입": [
+          "calm"
+        ]
+      }
+    }
+  },
+  "enemyAI": "enemy-ai.json",
+  "stageAdjustments": {
+    "lesson-1": {
+      "enemyUpgradeLevel": 1
+    },
+    "lesson-2": {
+      "enemyUpgradeLevel": 2
+    }
+  },
+  "cinematics": {
+    "enabled": true,
+    "opening": {
+      "id": "walk-opening",
+      "when": "title"
+    },
+    "videos": {
+      "walk-opening": {
+        "file": "video/demo.mp4",
+        "fallback": "bg-hangar",
+        "seconds": 1.5
+      },
+      "walk-bridge": {
+        "file": "video/demo.mp4",
+        "fallback": "bg-harbor"
+      },
+      "walk-finisher": {
+        "file": "video/demo.mp4",
+        "fallback": "bg-arena"
+      },
+      "still-example": {
+        "fallback": "bg-harbor",
+        "seconds": 2
+      }
+    }
+  },
+  "loadingScreens": [
+    {
+      "image": "bg-hangar",
+      "cast": "hero"
+    },
+    {
+      "image": "bg-harbor",
+      "cast": "loop"
+    }
+  ]
+}

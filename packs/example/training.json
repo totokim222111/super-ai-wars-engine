@@ -1,0 +1,44 @@
+{
+  "rewards": {
+    "grunt": 10,
+    "elite": 15,
+    "boss": 20,
+    "named": 15
+  },
+  "classification": {
+    "bossSizes": [
+      "LL"
+    ],
+    "eliteSizes": [
+      "L"
+    ],
+    "bossTags": [
+      "boss"
+    ],
+    "eliteTags": [
+      "elite"
+    ],
+    "namedPilots": []
+  },
+  "stats": {
+    "hit": {
+      "label": "명중",
+      "step": 1,
+      "costs": [
+        5,
+        10,
+        15
+      ]
+    },
+    "skill": {
+      "label": "추론",
+      "step": 1,
+      "costs": [
+        5,
+        10,
+        15
+      ]
+    }
+  },
+  "skills": {}
+}

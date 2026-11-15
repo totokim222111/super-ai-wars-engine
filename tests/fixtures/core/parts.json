@@ -1,0 +1,110 @@
+[
+  {
+    "id": "hull",
+    "name": "보강 프레임",
+    "kind": "passive",
+    "effects": [
+      {
+        "type": "statAdd",
+        "value": {
+          "hp": 1000
+        }
+      }
+    ],
+    "desc": "최대 HP +1000"
+  },
+  {
+    "id": "battery",
+    "name": "에너지 탱크",
+    "kind": "passive",
+    "effects": [
+      {
+        "type": "statAdd",
+        "value": {
+          "en": 40
+        }
+      }
+    ],
+    "desc": "최대 EN +40"
+  },
+  {
+    "id": "plating",
+    "name": "장갑판",
+    "kind": "passive",
+    "effects": [
+      {
+        "type": "statAdd",
+        "value": {
+          "armor": 200
+        }
+      }
+    ],
+    "desc": "장갑 +200"
+  },
+  {
+    "id": "stabilizer",
+    "name": "안정 장치",
+    "kind": "passive",
+    "effects": [
+      {
+        "type": "statAdd",
+        "value": {
+          "mobility": 10
+        }
+      }
+    ],
+    "desc": "운동성 +10"
+  },
+  {
+    "id": "booster",
+    "name": "추진기",
+    "kind": "passive",
+    "effects": [
+      {
+        "type": "moveAdd",
+        "value": 1
+      }
+    ],
+    "desc": "이동력 +1"
+  },
+  {
+    "id": "sea-kit",
+    "name": "수중 어댑터",
+    "kind": "passive",
+    "effects": [
+      {
+        "type": "adaptSet",
+        "value": {
+          "sea": "S"
+        }
+      }
+    ],
+    "desc": "해 적응 S"
+  },
+  {
+    "id": "repair-kit",
+    "name": "수리 키트",
+    "kind": "consumable",
+    "effects": [
+      {
+        "type": "hpRestore",
+        "value": {
+          "pct": 50
+        }
+      }
+    ],
+    "desc": "자신의 HP 50% 회복 · 스테이지당 1회"
+  },
+  {
+    "id": "sp-kit",
+    "name": "SP 키트",
+    "kind": "consumable",
+    "effects": [
+      {
+        "type": "spRestore",
+        "value": 30
+      }
+    ],
+    "desc": "자신의 SP 30 회복 · 스테이지당 1회"
+  }
+]

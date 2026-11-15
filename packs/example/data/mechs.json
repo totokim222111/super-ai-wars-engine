@@ -1,0 +1,146 @@
+[
+  {
+    "id": "scout",
+    "name": "산책호",
+    "hp": 6000,
+    "en": 120,
+    "armor": 900,
+    "mobility": 110,
+    "move": 5,
+    "moveType": [
+      "ground"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "weapons": [
+      "pulse",
+      "blade",
+      "practice-round"
+    ],
+    "partSlots": 2,
+    "costClass": 1,
+    "exp": 100,
+    "credits": 100,
+    "subPilots": [
+      "echo"
+    ],
+    "cheerHp": 0.3
+  },
+  {
+    "id": "guard",
+    "name": "방호형 산책호",
+    "hp": 6500,
+    "en": 120,
+    "armor": 1200,
+    "mobility": 110,
+    "move": 5,
+    "moveType": [
+      "ground"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "weapons": [
+      "pulse",
+      "blade",
+      "practice-round"
+    ],
+    "partSlots": 2,
+    "costClass": 1,
+    "exp": 100,
+    "credits": 100,
+    "subPilots": [
+      "echo"
+    ],
+    "cheerHp": 0.3
+  },
+  {
+    "id": "helper",
+    "name": "작은 날개",
+    "hp": 4800,
+    "en": 120,
+    "armor": 700,
+    "mobility": 110,
+    "move": 5,
+    "moveType": [
+      "ground"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "weapons": [
+      "pulse"
+    ],
+    "partSlots": 2,
+    "costClass": 1,
+    "exp": 100,
+    "credits": 100,
+    "enRecovery": {
+      "pct": 10
+    },
+    "devices": [
+      {
+        "id": "supply",
+        "name": "보급 장치",
+        "kind": "resupply",
+        "uses": 8,
+        "postMove": true,
+        "morale": -10,
+        "experience": 60
+      },
+      {
+        "id": "repair",
+        "name": "수리 장치",
+        "kind": "repair",
+        "uses": 8,
+        "postMove": true,
+        "amount": {
+          "pct": 30
+        },
+        "experience": 60
+      }
+    ]
+  },
+  {
+    "id": "dummy",
+    "name": "연습 인형",
+    "hp": 2000,
+    "en": 120,
+    "armor": 300,
+    "mobility": 110,
+    "move": 5,
+    "moveType": [
+      "ground"
+    ],
+    "size": "M",
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "A"
+    },
+    "weapons": [
+      "pebble",
+      "paint-tag",
+      "echo-copy",
+      "second-beat"
+    ],
+    "partSlots": 2,
+    "costClass": 1,
+    "exp": 100,
+    "credits": 100
+  }
+]

@@ -1,0 +1,154 @@
+[
+  {
+    "id": "pilot-1",
+    "name": "시험 파일럿 1",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 145,
+      "evade": 125,
+      "skill": 140,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-2",
+    "name": "시험 파일럿 2",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 145,
+      "evade": 125,
+      "skill": 140,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "C",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-3",
+    "name": "시험 파일럿 3",
+    "stats": {
+      "melee": 145,
+      "shoot": 145,
+      "hit": 145,
+      "evade": 125,
+      "skill": 140,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-4",
+    "name": "시험 파일럿 4",
+    "stats": {
+      "melee": 130,
+      "shoot": 130,
+      "hit": 130,
+      "evade": 120,
+      "skill": 130,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-5",
+    "name": "시험 파일럿 5",
+    "stats": {
+      "melee": 130,
+      "shoot": 130,
+      "hit": 130,
+      "evade": 120,
+      "skill": 130,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-6",
+    "name": "시험 파일럿 6",
+    "stats": {
+      "melee": 130,
+      "shoot": 130,
+      "hit": 130,
+      "evade": 120,
+      "skill": 130,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-7",
+    "name": "시험 파일럿 7",
+    "stats": {
+      "melee": 130,
+      "shoot": 130,
+      "hit": 130,
+      "evade": 120,
+      "skill": 130,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  },
+  {
+    "id": "pilot-8",
+    "name": "시험 파일럿 8",
+    "stats": {
+      "melee": 130,
+      "shoot": 130,
+      "hit": 130,
+      "evade": 120,
+      "skill": 130,
+      "defense": 120
+    },
+    "sp": 40,
+    "adapt": {
+      "air": "A",
+      "ground": "A",
+      "sea": "A",
+      "space": "B"
+    }
+  }
+]

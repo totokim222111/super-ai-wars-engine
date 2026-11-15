@@ -1,0 +1,34 @@
+{
+  "unitId": "hero",
+  "pilotId": "hero",
+  "actor": "hero",
+  "startLabel": "출발",
+  "name": {
+    "default": "모험가",
+    "min": 1,
+    "max": 12,
+    "pattern": "^[가-힣A-Za-z0-9]+$"
+  },
+  "presets": [
+    {
+      "id": "traveler",
+      "type": "traveler",
+      "name": "산책가",
+      "description": "작은 약속을 지키는 사람",
+      "cast": "hero",
+      "portrait": "bust-hero"
+    }
+  ],
+  "lines": [
+    {
+      "id": "scout",
+      "name": "산책호",
+      "description": "가볍게 움직이는 연습용 기체",
+      "unitName": "산책호"
+    }
+  ],
+  "placeholders": {
+    "이름": "name",
+    "기체": "unitName"
+  }
+}

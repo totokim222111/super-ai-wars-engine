@@ -1,0 +1,63 @@
+{
+  "bust-hero": {
+    "width": 1024,
+    "height": 1536,
+    "bytes": 178520
+  },
+  "portrait-loop": {
+    "width": 768,
+    "height": 768,
+    "bytes": 76424
+  },
+  "portrait-dummy": {
+    "width": 768,
+    "height": 768,
+    "bytes": 86186
+  },
+  "mech-scout": {
+    "width": 1024,
+    "height": 1024,
+    "bytes": 115424
+  },
+  "mech-guard": {
+    "width": 1024,
+    "height": 1024,
+    "bytes": 107306
+  },
+  "mech-loop": {
+    "width": 1024,
+    "height": 1024,
+    "bytes": 116120
+  },
+  "mech-dummy": {
+    "width": 1024,
+    "height": 1024,
+    "bytes": 119994
+  },
+  "bg-hangar": {
+    "width": 1600,
+    "height": 900,
+    "bytes": 130744
+  },
+  "bg-harbor": {
+    "width": 1600,
+    "height": 900,
+    "bytes": 105202
+  },
+  "bg-arena": {
+    "width": 1600,
+    "height": 900,
+    "bytes": 283532
+  },
+  "floor": {
+    "width": 512,
+    "height": 512,
+    "bytes": 37328
+  },
+  "bust-hero-moods": {
+    "width": 2624,
+    "height": 1935,
+    "bytes": 419300,
+    "empty": []
+  }
+}

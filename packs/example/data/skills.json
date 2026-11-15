@@ -1,0 +1,19 @@
+[
+  {
+    "id": "soft-shield",
+    "name": "가벼운 방호",
+    "desc": "추론에 비례하는 확률로 받은 피해를 줄입니다.",
+    "effects": [],
+    "activation": {
+      "hook": "defense",
+      "base": 5,
+      "baseline": 100,
+      "effects": [
+        {
+          "type": "takenMul",
+          "value": 0.7
+        }
+      ]
+    }
+  }
+]

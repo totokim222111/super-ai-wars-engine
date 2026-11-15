@@ -1,0 +1,97 @@
+{
+  "version": "m2-rules-1",
+  "k": {
+    "hitBase": 70,
+    "hitPilot": 0.5,
+    "evadePilot": 0.5,
+    "evadeMobility": 0.5,
+    "mobilityBase": 100,
+    "statDivisor": 200,
+    "critMul": 1.25,
+    "defendResponse": 0.5,
+    "evadeResponse": 0.5,
+    "minDamage": 10,
+    "spread": 0.1,
+    "critSkill": 0.5
+  },
+  "adaptHit": {
+    "S": 5,
+    "A": 0,
+    "B": -10,
+    "C": -20,
+    "D": -30
+  },
+  "adaptDmg": {
+    "S": 1.1,
+    "A": 1,
+    "B": 0.85,
+    "C": 0.65,
+    "D": 0.4
+  },
+  "sizeHit": {
+    "SS": -20,
+    "S": -10,
+    "M": 0,
+    "L": 10,
+    "LL": 20
+  },
+  "sizeDmg": {
+    "SS": 0.8,
+    "S": 0.9,
+    "M": 1,
+    "L": 1.1,
+    "LL": 1.2
+  },
+  "morale": {
+    "start": 100,
+    "min": 50,
+    "max": 150,
+    "round": 1,
+    "hit": 1,
+    "damaged": 1,
+    "evade": 1,
+    "kill": 3,
+    "allyKill": 1
+  },
+  "enRegenPerRound": 8,
+  "airMoveCost": 1,
+  "ai": {
+    "killBonus": 10000,
+    "counterWeight": 0.5,
+    "defensiveHp": 0.3,
+    "defendHp": 0.5
+  },
+  "effects": {
+    "sureHit": 100,
+    "quarterDamage": 0.25
+  },
+  "expPerLevel": 500,
+  "levelMax": 99,
+  "expLevelFactor": 0.1,
+  "expFactorMin": 0.25,
+  "expFactorMax": 3,
+  "damageExpRatio": 0.1,
+  "supportDefenseExp": 0.02,
+  "upgradeMax": 10,
+  "fullUpgradeThreshold": 5,
+  "upgradeStep": {
+    "hp": 300,
+    "en": 15,
+    "armor": 80,
+    "mobility": 4,
+    "weapons": 100
+  },
+  "upgradeCost": [
+    100,
+    200,
+    300,
+    450,
+    650,
+    900,
+    1200,
+    1600,
+    2100,
+    2700
+  ],
+  "supportDefenseHp": 0.5
+}

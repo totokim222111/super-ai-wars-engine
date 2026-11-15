@@ -1,0 +1,57 @@
+[
+  {
+    "id": "focus",
+    "name": "집중",
+    "sp": 10,
+    "duration": "turn",
+    "target": "self",
+    "effects": [
+      {
+        "type": "hitAdd",
+        "value": 30
+      }
+    ],
+    "desc": "이번 턴 명중 +30%p"
+  },
+  {
+    "id": "scan",
+    "name": "정찰",
+    "sp": 10,
+    "duration": "instant",
+    "target": "enemy",
+    "effects": [
+      {
+        "type": "scan"
+      }
+    ],
+    "desc": "적 유닛 하나의 정보를 스테이지가 끝날 때까지 공개합니다. 사거리 제한·행동 소모 없음."
+  },
+  {
+    "id": "awaken",
+    "name": "각성",
+    "sp": 0,
+    "spPct": 50,
+    "duration": "instant",
+    "target": "self",
+    "effects": [
+      {
+        "type": "extraAction"
+      }
+    ],
+    "desc": "이번 턴 행동 1회 추가. 첫 행동 전, 턴당 한 번."
+  },
+  {
+    "id": "supply",
+    "name": "보급",
+    "sp": 20,
+    "duration": "instant",
+    "target": "ally",
+    "experience": 60,
+    "effects": [
+      {
+        "type": "resupply"
+      }
+    ],
+    "desc": "아군 1기의 에너지와 탄수를 전부 회복합니다."
+  }
+]

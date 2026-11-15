@@ -1,0 +1,200 @@
+[
+  {
+    "id": "focus",
+    "name": "집중",
+    "sp": 10,
+    "duration": "turn",
+    "target": "self",
+    "effects": [
+      {
+        "type": "hitAdd",
+        "value": 30
+      }
+    ],
+    "desc": "이번 턴 명중 +30%p"
+  },
+  {
+    "id": "assure",
+    "name": "확신",
+    "sp": 15,
+    "duration": "turn",
+    "target": "self",
+    "effects": [
+      {
+        "type": "hitSet",
+        "value": 100
+      }
+    ],
+    "desc": "이번 턴 명중률 100%"
+  },
+  {
+    "id": "vanish",
+    "name": "기척",
+    "sp": 10,
+    "duration": "nextHitTaken",
+    "target": "self",
+    "effects": [
+      {
+        "type": "evadeAll"
+      }
+    ],
+    "desc": "다음 공격을 한 번 회피"
+  },
+  {
+    "id": "surge",
+    "name": "출력",
+    "sp": 20,
+    "duration": "nextAttack",
+    "target": "self",
+    "effects": [
+      {
+        "type": "damageMul",
+        "value": 2
+      }
+    ],
+    "desc": "다음 공격 피해 2배"
+  },
+  {
+    "id": "shelter",
+    "name": "보호",
+    "sp": 15,
+    "duration": "turn",
+    "target": "self",
+    "effects": [
+      {
+        "type": "takenMul",
+        "value": 0.25
+      }
+    ],
+    "desc": "이번 턴 받는 피해 1/4"
+  },
+  {
+    "id": "brace",
+    "name": "버팀",
+    "sp": 10,
+    "duration": "nextHitTaken",
+    "target": "self",
+    "effects": [
+      {
+        "type": "takenSet",
+        "value": 10
+      }
+    ],
+    "desc": "다음 피격 피해를 10으로 고정"
+  },
+  {
+    "id": "rouse",
+    "name": "분발",
+    "sp": 10,
+    "duration": "instant",
+    "target": "self",
+    "effects": [
+      {
+        "type": "moraleAdd",
+        "value": 10
+      }
+    ],
+    "desc": "자신의 기력 +10"
+  },
+  {
+    "id": "mend",
+    "name": "회복",
+    "sp": 15,
+    "duration": "instant",
+    "target": "self",
+    "effects": [
+      {
+        "type": "hpRestore",
+        "value": {
+          "pct": 30
+        }
+      }
+    ],
+    "desc": "자신의 HP 30% 회복"
+  },
+  {
+    "id": "aid",
+    "name": "구호",
+    "sp": 20,
+    "duration": "instant",
+    "target": "ally",
+    "effects": [
+      {
+        "type": "hpRestore",
+        "value": {
+          "pct": 30
+        }
+      }
+    ],
+    "desc": "선택한 아군의 HP 30% 회복"
+  },
+  {
+    "id": "stride",
+    "name": "전진",
+    "sp": 10,
+    "duration": "turn",
+    "target": "self",
+    "effects": [
+      {
+        "type": "moveAdd",
+        "value": 3
+      }
+    ],
+    "desc": "이번 턴 이동력 +3"
+  },
+  {
+    "id": "renew",
+    "name": "재기",
+    "sp": 30,
+    "duration": "instant",
+    "target": "self",
+    "effects": [
+      {
+        "type": "extraAction"
+      }
+    ],
+    "desc": "자신의 행동을 회복 · 이동은 유지"
+  },
+  {
+    "id": "study",
+    "name": "학습",
+    "sp": 10,
+    "duration": "nextAttack",
+    "target": "self",
+    "effects": [
+      {
+        "type": "expMul",
+        "value": 2
+      }
+    ],
+    "desc": "다음 전투 획득 경험치 2배"
+  },
+  {
+    "id": "fortune",
+    "name": "행운",
+    "sp": 10,
+    "duration": "nextAttack",
+    "target": "self",
+    "effects": [
+      {
+        "type": "creditMul",
+        "value": 2
+      }
+    ],
+    "desc": "다음 격파 획득 자금 2배"
+  },
+  {
+    "id": "unsettle",
+    "name": "압박",
+    "sp": 10,
+    "duration": "instant",
+    "target": "enemy",
+    "effects": [
+      {
+        "type": "moraleAdd",
+        "value": -10
+      }
+    ],
+    "desc": "선택한 적의 기력 -10"
+  }
+]

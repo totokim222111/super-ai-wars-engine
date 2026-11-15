@@ -1,0 +1,36 @@
+{
+  "items": {
+    "hull": {
+      "price": 200,
+      "fromEpisode": 1
+    },
+    "battery": {
+      "price": 150,
+      "fromEpisode": 1
+    },
+    "battery-loop": {
+      "price": 150,
+      "fromEpisode": 1
+    },
+    "reserve-battery": {
+      "price": 100,
+      "fromEpisode": 1
+    },
+    "ammo-box": {
+      "price": 100,
+      "fromEpisode": 1
+    }
+  },
+  "sellRatio": 0.5,
+  "maxQuantity": 9,
+  "income": {
+    "lesson-1": {
+      "defeat": 100,
+      "clear": 500
+    },
+    "lesson-2": {
+      "defeat": 100,
+      "clear": 700
+    }
+  }
+}
