@@ -1,3 +1,4 @@
+import {enabledFlag} from './conditions';
 import { playerName,interpolate,validPlayerName } from './player';
 import {dialoguePlain} from '../game/text';
 import {persistBattle} from './progress';
@@ -22,10 +23,12 @@ export const titleSession = (seed = 1): Session => ({ screen: 'title', campaign:
 const personalized=(content:Content,c:CampaignState):Content=>({...content,pilots:content.pilots.map(p=>p.id===c.player?.pilotId?{...p,name:playerName(c)}:p)});
 export function deployment(stage: Stage, campaign: CampaignState, content: Content): Stage {
   const s = structuredClone(stage);
+  const blocked=new Set([...stage.units,...stage.definitions??[]].filter(u=>!enabledFlag(campaign.flags,u.requiresFlag)).map(u=>u.id));
+  s.units=s.units.filter(u=>!blocked.has(u.id));
   if(s.enemyUpgradeLevel!==undefined)s.enemyUpgradeLevel=enemyUpgradeLevel(s.enemyUpgradeLevel,campaign.cycle??1,content.rules);
   s.units=s.units.map(u=> {const saved=campaign.roster.find(v=>v.id===u.id)??campaign.inheritance?.find(v=>v.id===u.id);if(!saved||u.side!=='player')return u;return {...u,...saved,...(s.minimumLevel!==undefined?{level:Math.max(s.minimumLevel,saved.level??1),tags:u.tags}:{}),x:u.x,y:u.y};});
   for (const [id, [x, y]] of Object.entries(s.rosterDeployments ?? {})) {
-    const unit = campaign.roster.find(u => u.id === id); if (!unit || s.units.some(u => u.id === id)) continue;
+    const unit = campaign.roster.find(u => u.id === id); if (!unit || blocked.has(id) || !enabledFlag(campaign.flags,unit.requiresFlag) || s.units.some(u => u.id === id)) continue;
     const placed = { ...unit,...(s.minimumLevel!==undefined?{level:Math.max(s.minimumLevel,unit.level??1)}:{}), x, y, side: 'player' as const };
     const p = nearestFree({ stage: s, content, units: s.units.map(u => ({ ...u, alive: true })) } as Game['battle'], placed);
     s.units.push({ ...placed, ...p });

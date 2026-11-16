@@ -1,4 +1,4 @@
-import {drawFocusedImage,type ImageRect} from './image-layout';
+import {drawFocusedImage,focalImageRect,type ImageRect} from './image-layout';
 import { cueImages, waitForImages } from './pack/preload';
 import { faceOf, type Portrait } from './portrait';
 /**
@@ -14,7 +14,7 @@ import type { Choice, Condition, Value } from './story/parse';
 import { all, ease, tween, until, wait, type Step } from './flow';
 import { flash, shake, type Show } from './fx';
 import { H, Shape, Sprite, W, type Node } from './stage';
-import { COLOR, cover, quietCgCard, placeChip, storyLine, type Side, bigText } from './ui';
+import { COLOR, cover, nameCard, placeChip, storyLine, type Side, bigText } from './ui';
 export const CG_TONES = ['강림','개그','섬뜩','감성'] as const;
 export type CgTone = typeof CG_TONES[number];
 
@@ -202,7 +202,7 @@ export class Director {
       case 'flash': show.sound?.play('flash'); flash(show, 1, 0.5); yield* wait(0.12); return;
       case 'shake': show.sound?.play('hit'); yield* shake(show, cue.power ?? 16, 0.45); return;
       case 'wait': yield* wait(cue.seconds); return;
-      case 'cg': if(cue.alone) { this.clearLine(); const image=this.images[cue.image],art=stage.ui.add(Object.assign(new Shape({},ctx=>{ctx.fillStyle='#05070c';ctx.fillRect(0,0,W,H);if(image?.naturalWidth)drawFocusedImage(ctx,image,{x:24,y:24,w:W-48,h:H-48},1.06);}),{z:55})); this.taps.take(); yield* until(()=>this.taps.take()); art.remove(); return; } yield* this.cg(cue.image, cue.name, cue.sub, cue.tone ?? '강림'); return;
+      case 'cg': if(cue.alone) { this.clearLine(); const image=this.images[cue.image],art=stage.ui.add(Object.assign(new Shape({},ctx=>{ctx.fillStyle='#05070c';ctx.fillRect(0,0,W,H);if(image?.naturalWidth)drawFocusedImage(ctx,image,{x:0,y:0,w:W,h:H},1.03);}),{z:55})); this.taps.take(); yield* until(()=>this.taps.take()); art.remove(); return; } yield* this.cg(cue.image, cue.name, cue.sub, cue.tone ?? '강림'); return;
     }
   }
 
@@ -226,23 +226,23 @@ export class Director {
   /** Tone-specific CG, character name and title. Archival description never enters this renderer. */
   private *cg(image: string, name: string, sub: string, tone: CgTone): Step {
     const {show}=this,{stage}=show;this.clearLine();if(this.place)this.place.visible=false;
-    const imageElement=this.images[image],veil=stage.ui.add(Object.assign(cover('#05070c'),{z:54}));
+    const imageElement=this.images[image],initial=focalImageRect(imageElement?.naturalWidth||W,imageElement?.naturalHeight||H,{x:0,y:0,w:W,h:H}),veil=stage.ui.add(Object.assign(cover('#05070c'),{z:54}));
     const art=stage.ui.add(Object.assign(new Shape({imageId:image,tone,zoom:1,dx:0,dy:0,layout:undefined as ImageRect|undefined},(ctx,s)=>{
-      if(imageElement?.naturalWidth)s.layout=drawFocusedImage(ctx,imageElement,{x:24,y:24,w:W-48,h:H-144},s.zoom,[s.dx,s.dy]);
-    }),{z:55,alpha:tone==='강림'?1:0}));
-    // A dedicated bottom caption never masks a face, including lower-positioned figures.
-    const card=stage.ui.add(quietCgCard(name,sub,tone==='섬뜩'?'#94b2cc':COLOR.ink));Object.assign(card,{x:42,y:H-110,z:62,alpha:0});
+      if(imageElement?.naturalWidth){s.layout=drawFocusedImage(ctx,imageElement,{x:0,y:0,w:W,h:H},s.zoom);card.x=s.layout.x+18;card.y=s.layout.y+s.layout.h-196;}
+    }),{z:55,alpha:0}));
+    // The plate belongs to the image, not a separate footer area.
+    const card=stage.ui.add(nameCard(name,sub,tone==='섬뜩'?'#94b2cc':COLOR.gold,initial.w-36));Object.assign(card,{x:initial.x+18,y:initial.y+initial.h-196,z:62,alpha:0});
     if(tone==='강림'){
       show.sound?.play('heavy',.7);
-      show.runner.run(tween(art.state,{zoom:1.06,dx:-8},6,ease.linear));
-      yield* tween(card,{alpha:1},.3);show.sound?.play('slash',.8);
+      show.runner.run(tween(art.state,{zoom:1.03},6,ease.linear));
+      yield*all(tween(art,{alpha:1},.3),tween(card,{alpha:1},.3));show.sound?.play('slash',.8);
     }else if(tone==='개그'){
-      art.state.zoom=1.045;show.sound?.play('confirm',.35);
-      yield*all(tween(art,{alpha:1},.23),tween(art.state,{zoom:1,dx:4},.23,ease.back),tween(card,{alpha:1},.22));
+      art.state.zoom=1.02;show.sound?.play('confirm',.35);
+      yield*all(tween(art,{alpha:1},.23),tween(art.state,{zoom:1},.23,ease.back),tween(card,{alpha:1},.22));
     }else{
       const cold=tone==='섬뜩';if(cold)show.sound?.play('cg-cold',.3);
       yield*all(tween(art,{alpha:1},cold?1.8:1.1,ease.inOut),tween(card,{alpha:1},cold?1.9:1.25));
-      show.runner.run(tween(art.state,{zoom:1.025,dy:-4},12,ease.linear));
+      show.runner.run(tween(art.state,{zoom:1.02},12,ease.linear));
     }
     this.taps.take();yield*until(()=>this.taps.take());
     yield*all(tween(art,{alpha:0},.35),tween(card,{alpha:0},.25));

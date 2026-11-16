@@ -57,7 +57,7 @@ export interface Terrain {
 export type UpgradeKey = 'hp'|'en'|'armor'|'mobility'|'weapons';
 export type Upgrades = Record<UpgradeKey, number>;
 export interface Loadout { level?: number; exp?: number; upgrades?: Upgrades; parts?: (string|null)[]; fullUpgradeBonus?: string; subPilotProgress?:{pilotId:string;level:number;exp:number}[] }
-export interface StageUnit extends Point, Loadout { id: string; pilotId: string; mechId: string; side: Side; ai?: AIType; tags?: string[];pilotOverrides?:{stats?:Partial<Pilot['stats']>;growth?:Partial<Pilot['stats']>;startMorale?:number;clearOnJoin?:boolean} }
+export interface StageUnit extends Point, Loadout { requiresFlag?:string; id: string; pilotId: string; mechId: string; side: Side; ai?: AIType; tags?: string[];pilotOverrides?:{stats?:Partial<Pilot['stats']>;growth?:Partial<Pilot['stats']>;startMorale?:number;clearOnJoin?:boolean} }
 export interface EnemyPilotScaling {
   baseline:{level:number;stats:Pilot['stats']};
   units:Record<string,{ratio:number;actionCap?:number}>;

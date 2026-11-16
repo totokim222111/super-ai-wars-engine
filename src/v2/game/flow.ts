@@ -66,6 +66,8 @@ export class GameFlow {
     } const events = this.storyEvents ?? new StoryEvents(p, this.model, episode);events.activateScene(scene); this.app.push(new PackStoryScreen(story, scene, packActors(p, this.sample.images), this.sample.images, intermission ? events.intermissionState() : events.state, () => {events.finishScene(scene); this.model.setStoryValue(key, true); this.app.pop('none'); done(); },{music:storyMusic(story,scene,episode,p.game.music,p.game.musicRules),sceneMusic:name=>storyMusic(story,name,episode,p.game.music,p.game.musicRules)}), 'none'); }
     readonly look: MenuLook;
     constructor(readonly app: App, readonly model: CoreCampaign, private readonly sample: Pick<Sample,'images'>, private readonly leave?: () => void, readonly pack?: Pack) {
+        if(pack)pack.progressFlag=flag=>model.storyValue(flag);
+        if(app.loadingScreen)app.loadingScreen.flagValue=flag=>model.storyValue(flag);
         this.look = { background: sample.images[pack?.game.titleArt.background??''], portraits: (pack?.players.presets??[]).map(p=>sample.images[p.portrait??'']), temporary: !!pack&&pack.players.presets.some(p=>pack.cast[p.cast??'']?.temporary) };
         model.onSettings = s => { if(app.cinematics)app.cinematics.enabled=s.cinematic!==false; app.sound.sfxVolume = s.sfx / 10; app.sound.musicVolume = s.music / 10; };
         model.onSettings(model.settings());
@@ -75,7 +77,7 @@ export class GameFlow {
         this.app.pop('none'); }
     title(): void {
         this.clear();
-        this.app.push(new TitleScreen({ title: this.pack?.game.title ?? '전략 RPG', subtitle: this.pack?.game.subtitle ?? '', footer:this.pack?.game.titleFooter, background: this.look.background, art: this.sample.images[this.pack?.game.titleArt.character ?? ''], music: this.pack?.game.music.title, items: this.titleItems() }), 'none');
+        this.app.push(new TitleScreen({ title: this.pack?.game.title ?? '전략 RPG', subtitle: this.pack?.game.subtitle ?? '', footer:this.model.storageNotice??this.pack?.game.titleFooter, background: this.look.background, art: this.sample.images[this.pack?.game.titleArt.character ?? ''], music: this.pack?.game.music.title, items: this.titleItems() }), 'none');
     }
     private titleItems():import('../menus/screens').TitleOptions['items'] {
         const latest=this.model.saves.latest();return [

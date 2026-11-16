@@ -7,7 +7,7 @@ import { label, MenuList, Tabs } from '../kit';
 import { Shape, Sprite } from '../stage';
 import { cover } from '../ui';
 import type { Pack } from '../pack/load';
-import { packActors, packUnit } from '../pack/load';
+import { visibleContent,packActors, packUnit } from '../pack/load';
 import { PackStoryScreen, memoryStoryState } from '../story/play';
 import type { Sample } from './sample';
 abstract class PackPage extends Screen {
@@ -19,9 +19,9 @@ export class StoryPreviewScreen extends PackPage {
     private type='';
     private list?: MenuList;
     enter(): void { this.frame('대본 틀어 보기'); this.ui.add(Object.assign(new Tabs(this.pack.game.episodes.map(e => e.title), i => { this.episode = i; this.scenes(); }, { w: 830 }), { x: 80, y: 155 })); this.ui.add(Object.assign(new Tabs(this.pack.players.presets.map(p=>p.name),i=>{this.type=this.pack.players.presets[i].type;}, { w: 290 }), { x: 910, y: 155 })); this.scenes(); }
-    private state():import('../story/play').StoryState{const preset=this.pack.players.presets.find(p=>p.type===this.type)??this.pack.players.presets[0];return {...memoryStoryState(preset.type,this.pack.game.story?.affection),placeholders:this.pack.players.placeholders,playerName:()=>this.pack.players.name.default,unitName:()=>this.pack.players.lines[0]?.unitName??'',actor:id=>id===this.pack.players.actor?preset.cast??id:id};}
+    private state():import('../story/play').StoryState{const preset=this.pack.players.presets.find(p=>p.type===this.type)??this.pack.players.presets[0];const state=memoryStoryState(preset.type,this.pack.game.story?.affection);for(const rule of this.pack.game.visibility??[])state.set(rule.flag,this.pack.progressFlag?.(rule.flag)??false);return {...state,placeholders:this.pack.players.placeholders,playerName:()=>this.pack.players.name.default,unitName:()=>this.pack.players.lines[0]?.unitName??'',actor:id=>id===this.pack.players.actor?preset.cast??id:id};}
     private scenes(): void {const id=this.pack.game.episodes[this.episode].id;if(this.pack.ensureStory&&!this.pack.storyLoaded?.(id)){this.app.load(this.pack.ensureStory(id).then(()=>this.scenes()));return;} if (this.list)
-        this.ui.remove(this.list); const ep = this.pack.game.episodes[this.episode]; const scenes = Object.keys(this.pack.stories[ep.id].scenes).filter(s => !s.startsWith('_')); this.list = this.ui.add(Object.assign(new MenuList(scenes.map(label => ({ label })), i => this.app.push(new PackStoryScreen(this.pack.stories[ep.id], scenes[i], packActors(this.pack, this.sample.images), this.sample.images, this.state(), () => this.app.pop())), { w: 1120, rows: 7, rowHeight: 52 }), { x: 80, y: 230 })); }
+        this.ui.remove(this.list); const ep = this.pack.game.episodes[this.episode]; const scenes = Object.keys(this.pack.stories[ep.id].scenes).filter(s => !s.startsWith('_')&&visibleContent(this.pack,'scenes',s)); this.list = this.ui.add(Object.assign(new MenuList(scenes.map(label => ({ label })), i => this.app.push(new PackStoryScreen(this.pack.stories[ep.id], scenes[i], packActors(this.pack, this.sample.images), this.sample.images, this.state(), () => this.app.pop())), { w: 1120, rows: 7, rowHeight: 52 }), { x: 80, y: 230 })); }
 }
 export class PackCheckScreen extends PackPage {
     private artWarnings:Pack['warnings']=[];

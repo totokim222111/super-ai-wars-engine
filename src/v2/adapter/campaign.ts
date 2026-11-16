@@ -6,6 +6,7 @@ import {term} from '../terms';
 import { effectivePilot } from '../../core';
 import type { BattleState, Content, Unit, UpgradeKey } from '../../core';
 import { previewUpgrade, upgradeMech, equipPart, unequipPart } from '../../campaign/intermission';
+import {enabledFlag} from '../../campaign/conditions';
 import { titleSession, deployment, finishStage, retryDefeat } from '../../campaign/session';
 import type { Session } from '../../campaign/session';
 import { nextNode } from '../../campaign/state';
@@ -23,6 +24,9 @@ import {defeatPoints,type Progression} from '../pack/progression';
 import {readGrowth,trainedContent,type Growth} from './training';
 import {TrainingSaves} from './saves';
 import {defaultPlayers} from '../../campaign/player';
+import {encodeSaveCode,decodeSaveCode} from '../../campaign/save-code';
+import {SLOT_IDS} from '../../campaign/saves';
+import {STORAGE_NOTICE} from '../../platform/storage';
 import {storageKey} from '../../platform/storage';
 
 const keys: UpgradeKey[] = ['hp', 'en', 'armor', 'mobility', 'weapons'];
@@ -33,7 +37,7 @@ export class CoreCampaign implements MenuModel {
   private preferences: MenuSettings = { sfx: 8, music: 6, animation: 'on', speed: 1, shake: 10 };
   private playTime = 0;
   private started = Date.now();
-  /** 진행 중인 옛 전투는 사건 pc와 지문 위치까지 원래 프로그램으로 이어 저장한다. */
+  /** 불러오기 검사에서 선택한 현재 캠페인 계약으로 후속 저장도 검사한다. */
   private savingData?:CampaignContent;
   private last: StageResult = { title: '', won: false, credits: 0, exp: 0, kills: 0, parts: [], levels: [] };
   onSettings?: (settings: MenuSettings) => void;
@@ -74,7 +78,8 @@ export class CoreCampaign implements MenuModel {
     { id: 'load', label: '불러오기', about: '저장된 진행을 불러옵니다.' },
     { id: 'settings', label: '설정', about: '소리·전투 연출·속도·흔들림을 바꿉니다.' },
   ]; }
-  upgradeUnits() { return this.session.campaign.roster.map(u => ({ id: u.id, name: this.content.mechs.find(m => m.id === u.mechId)!.name,
+  private visibleRoster(){const declared=Object.values(this.data.stages).flatMap(s=>[...s.stage.units,...s.stage.definitions??[]]);return this.session.campaign.roster.filter(u=>!declared.some(d=>d.id===u.id&&!enabledFlag(this.session.campaign.flags,d.requiresFlag)));}
+  upgradeUnits() { return this.visibleRoster().map(u => ({ id: u.id, name: this.content.mechs.find(m => m.id === u.mechId)!.name,
     pilot: u.pilotId === this.data.players?.pilotId ? playerName(this.session.campaign) : this.content.pilots.find(p => p.id === u.pilotId)!.name,
     weapons:(()=>{const p=previewUpgrade(this.session,this.content,u.id,'weapons');return Object.entries(p.before.weaponPower).map(([id,value])=>({name:this.content.weapons.find(w=>w.id===id)!.name,value,next:p.from<p.max?p.after.weaponPower[id]:undefined}));})(),
     image: this.lookup.battle.mech(this.content.mechs.find(m => m.id === u.mechId)!, { ...u, effects: [] } as unknown as Unit).image,
@@ -84,10 +89,10 @@ export class CoreCampaign implements MenuModel {
     }) })); }
   upgrade(id: string, key: string): boolean { try { if (!keys.includes(key as UpgradeKey)) return false; this.session = upgradeMech(this.session, this.content, id, key as UpgradeKey); return true; } catch { return false; } }
   inventory() { return (this.content.parts ?? []).map(p => ({ id: p.id, name: p.name, description: p.desc, owned: this.session.campaign.parts.filter(id => id === p.id).length })); }
-  partUnits() { return this.session.campaign.roster.map(u => ({ id: u.id, name: this.content.mechs.find(m => m.id === u.mechId)!.name,
+  partUnits() { return this.visibleRoster().map(u => ({ id: u.id, name: this.content.mechs.find(m => m.id === u.mechId)!.name,
     slots: Array.from({ length: this.content.mechs.find(m => m.id === u.mechId)!.partSlots ?? 0 }, (_, i) => this.inventory().find(p => p.id === u.parts?.[i]) ?? null) })); }
   equip(id: string, slot: number, partId: string | null): boolean { try { this.session = partId ? equipPart(this.session, this.content, id, slot, partId) : unequipPart(this.session, this.content, id, slot); return true; } catch { return false; } }
-  pilots() { return this.session.campaign.roster.map(u => {
+  pilots() { return this.visibleRoster().map(u => {
     const p = effectivePilot({ content: this.trainedRules() } as BattleState, { ...u, effects: [] } as unknown as Unit);
     return { id: u.id, name: p.id === this.data.players?.pilotId ? playerName(this.session.campaign) : p.name, level: u.level ?? 1, exp: u.exp ?? 0,
       portrait: this.lookup.battle.pilot(p, { ...u, effects: [] } as unknown as Unit).portrait,
@@ -137,17 +142,20 @@ export class CoreCampaign implements MenuModel {
   }
   slots() { return this.saves.slots.map(s => ({ id: s.id, label: slotName(s.id), available: s.status === 'ok', detail: s.file ? `${s.file.summary.stage} · ${s.file.summary.turn ?? '—'}턴 · ${new Date(s.file.savedAt).toLocaleString('ko-KR')} · ${playerName(s.file.campaign)}` : s.status === 'empty' ? '빈 칸' : '읽을 수 없음' })); }
   private writeSave(slot:string):Promise<void>{return this.saves.write(slot as SlotId,makeSave(this.session,this.savingData??this.data,this.playTime+Date.now()-this.started));}
-  async save(slot:string):Promise<void>{try{await this.writeSave(slot);}catch(error){console.warn('[save] 수동 저장 실패',error);throw new Error('저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.');}}
+  async save(slot:string):Promise<void>{try{await this.writeSave(slot);}catch(error){console.warn('[save] 수동 저장 실패',error);this.storageNotice=STORAGE_NOTICE;this.onStorageIssue?.();throw new Error('저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.');}}
   private autoSaving?:Promise<void>;private autoDirty=false;
   /** Validation precedes replacement. A failed attempt leaves the previous slot intact;
    * the next safe command/scene requests a fresh snapshot instead of retrying bad bytes. */
   autoSave():Promise<void>{
     this.autoDirty=true;if(this.autoSaving)return this.autoSaving;
-    this.autoSaving=(async()=>{while(this.autoDirty){this.autoDirty=false;try{await this.writeSave('auto');}catch(error){console.warn('[save] 자동 저장 보류: 다음 안전한 시점에 다시 시도합니다.',error);break;}}})().finally(()=>{this.autoSaving=undefined;});
+    this.autoSaving=(async()=>{while(this.autoDirty){this.autoDirty=false;try{await this.writeSave('auto');}catch(error){console.warn('[save] 자동 저장 보류: 다음 안전한 시점에 다시 시도합니다.',error);this.storageNotice=STORAGE_NOTICE;this.onStorageIssue?.();break;}}})().finally(()=>{this.autoSaving=undefined;});
     return this.autoSaving;
   }
+  storageNotice?:string;onStorageIssue?:()=>void;
   migrationNotice?:string;
-  async load(slot: string): Promise<void> { const loaded = await this.saves.load(slot as SlotId); this.session = loaded.session;if(loaded.file.migrationNotice)this.migrationNotice=loaded.file.migrationNotice.refund>0?`밸런스가 바뀌어 개조 비용 ${loaded.file.migrationNotice.refund.toLocaleString()} ${this.content.terms?.credits??'크레딧'}을 돌려드렸습니다.`:'밸런스가 바뀌어 저장을 새 판에 맞췄습니다.';this.savingData='data'in loaded?loaded.data as CampaignContent:undefined; this.playTime = loaded.file.playTimeMs; this.started = Date.now(); }
+  async load(slot: string): Promise<void> { const loaded = await this.saves.load(slot as SlotId); this.session = loaded.session;if(loaded.file.migrationNotice)this.migrationNotice=loaded.file.migrationNotice.restartedStage?'게임이 업데이트되어 이 스테이지를 처음부터 시작합니다':loaded.file.migrationNotice.updated&&loaded.file.migrationNotice.refund===0?'게임이 업데이트되어 저장을 새 판에 맞췄습니다.':loaded.file.migrationNotice.refund>0?`밸런스가 바뀌어 개조 비용 ${loaded.file.migrationNotice.refund.toLocaleString()} ${this.content.terms?.credits??'크레딧'}을 돌려드렸습니다.`:'밸런스가 바뀌어 저장을 새 판에 맞췄습니다.';this.savingData='data'in loaded?loaded.data as CampaignContent:undefined; this.playTime = loaded.file.playTimeMs; this.started = Date.now(); }
+  async saveCode():Promise<string>{await this.saves.refresh();const slots=Object.fromEntries(SLOT_IDS.map(id=>[id,this.saves.slots.find(s=>s.id===id)?.file?JSON.stringify(this.saves.slots.find(s=>s.id===id)!.file):null]));if(this.session.screen!=='title'){const file=makeSave(this.session,this.savingData??this.data,this.playTime+Date.now()-this.started);const check=JSON.stringify({format:`${this.data.id??'default'}:slots:2`,slots:{suspend:JSON.stringify(file)}});this.saves.importFile(check);slots.suspend=JSON.stringify(file);}if(!Object.values(slots).some(Boolean))throw Error('먼저 게임을 시작하거나 저장을 불러오세요.');return encodeSaveCode(JSON.stringify({format:`${this.data.id??'default'}:slots:2`,slots}));}
+  async importSaveCode(code:string):Promise<void>{const entries=this.saves.importFile(decodeSaveCode(code));if(!entries.length)throw Error('저장 코드에 슬롯이 없습니다.');for(const e of entries)await this.saves.write(e.id,e.file);await this.saves.refresh();}
   settings(): MenuSettings { return { ...this.preferences }; }
   setSettings(s: MenuSettings): void {
     const number = (n: number, min: number, max: number, fallback: number) => Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
@@ -191,6 +199,7 @@ export class CoreCampaign implements MenuModel {
     const stage = deployment(this.data.stages[node.id].stage, s.campaign, this.trainedRules()); stage.scenario = false;
     // 편성 진행은 저장에서 이어받고 기체 모델은 새 화의 선언을 따른다.
     const declared=[...this.data.stages[node.id].stage.units,...(this.data.stages[node.id].stage.definitions??[])];
+    s.campaign.roster=s.campaign.roster.filter(u=>!declared.some(d=>d.id===u.id&&!enabledFlag(s.campaign.flags,d.requiresFlag)));
     for(const u of stage.units.filter(u=>u.side==='player')){const model=declared.find(d=>d.id===u.id&&d.side==='player');if(model){u.mechId=model.mechId;u.tags=[...(model.tags??[])];}}
     const player=stage.units.find(u=>u.id===this.playerConfig().unitId),line=this.playerConfig().lines.find(l=>l.id===s.campaign.player?.line);if(player)player.mechId=line?.mechs?.[player.mechId]??player.mechId;
     for (const u of stage.units.filter(u => u.side === 'player')) {const saved=s.campaign.roster.find(v=>v.id===u.id);if(saved)saved.mechId=u.mechId;else s.campaign.roster.push(structuredClone(u));}

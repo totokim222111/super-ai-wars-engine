@@ -57,7 +57,7 @@ export function compileStage(source:StageSource,catalog:StageCatalog,file:string
     if((!pending||rosterOnly)&&x===undefined){fail(line,`배치 좌표 없음: ${id}`,'유닛 id 뒤에 열,행을 적으세요.');return;}
     const unit:StageUnit=!mech&&base?structuredClone(base):{id,mechId:mech!,pilotId:catalog.defaultPilot??'',x:0,y:0,side,level:1,tags:[],ai:'aggressive'};
     Object.assign(unit,{id,mechId:mech??unit.mechId,side,...(x!==undefined?{x:Number(x),y:Number(y)}:{})});
-    let rest=tail.trim();const barrier=/배리어\s+(무적|\d+)/.exec(rest);if(barrier){inlineRules.push({text:`배리어 ${id} ${barrier[1]}`,line});rest=rest.replace(barrier[0],'');}const level=/\b레벨\s+(\d+)/.exec(rest)??/레벨\s+(\d+)/.exec(rest),pilot=/파일럿\s+([\w-]+)/.exec(rest),tags=/태그\s+([\w,-]+)/.exec(rest);
+    let rest=tail.trim();const required=/조건\s+(\S+)/.exec(rest);if(required){unit.requiresFlag=required[1];rest=rest.replace(required[0],'');}const barrier=/배리어\s+(무적|\d+)/.exec(rest);if(barrier){inlineRules.push({text:`배리어 ${id} ${barrier[1]}`,line});rest=rest.replace(barrier[0],'');}const level=/\b레벨\s+(\d+)/.exec(rest)??/레벨\s+(\d+)/.exec(rest),pilot=/파일럿\s+([\w-]+)/.exec(rest),tags=/태그\s+([\w,-]+)/.exec(rest);
     if(level){unit.level=Number(level[1]);rest=rest.replace(level[0],'');}if(pilot){unit.pilotId=pilot[1];rest=rest.replace(pilot[0],'');}if(tags){unit.tags=tags[1].split(',').filter(Boolean);rest=rest.replace(tags[0],'');}
     rest=rest.trim();const reach=/^도달\s+([\w-]+)$/.exec(rest);const track=/^추적\s+([\w-]+)$/.exec(rest);
     if(reach){unit.ai='aggressive';ai[id]={kind:'reach',target:reach[1]};}

@@ -83,9 +83,20 @@ export class AtomicStorage implements ByteStore {
     this.queue = operation.catch(() => {}); return operation;
   }
 }
-export function browserStorage(packId='default'): AtomicStorage {
+export function browserStorage(packId='default'): SessionBytes {
   let primary: ByteStore | null = null;
   try { if (typeof indexedDB !== 'undefined') primary = new IndexedBytes(indexedDB,packId); } catch { /* Private mode. */ }
   const local: LocalStore = { getItem: k => localStorage.getItem(k), setItem: (k, v) => localStorage.setItem(k, v), removeItem: k => localStorage.removeItem(k) };
-  return new AtomicStorage(primary, new LocalBytes(local,packId));
+  return new SessionBytes(new AtomicStorage(primary, new LocalBytes(local,packId)));
+}
+/** A failed persistent backend must still allow portable backup for this session. */
+export const STORAGE_NOTICE='이 환경에서는 저장이 유지되지 않을 수 있습니다. 저장 코드 복사를 이용하세요.';
+export class SessionBytes implements ByteStore {
+ readonly status={persistent:true,backend:'확인 중'};onUnavailable?:()=>void;
+ private readonly memory=new Map<string,string>();private readonly dirty=new Set<string>();
+ constructor(readonly persistent:ByteStore){}
+ private unavailable(error:unknown):void{const first=this.status.persistent;this.status.persistent=false;this.status.backend='메모리 임시 저장';if(first){console.warn('[save] 영구 저장소 사용 불가',error);this.onUnavailable?.();}}
+ async probe():Promise<boolean>{try{const key='__storage_probe__',value=String(Date.now())+':probe';await this.persistent.replace(key,value);if(await this.persistent.read(key)!==value)throw Error('storage readback mismatch');for(const key of this.dirty)await this.persistent.replace(key,this.memory.get(key)!);this.dirty.clear();this.status.persistent=true;this.status.backend=this.persistent instanceof AtomicStorage?this.persistent.backend:'persistent';return true;}catch(e){this.unavailable(e);return false;}}
+ async read(key:string):Promise<string|null>{if(this.dirty.has(key))return this.memory.get(key)??null;try{const value=await this.persistent.read(key);if(value!==null)this.memory.set(key,value);return value??this.memory.get(key)??null;}catch(e){this.unavailable(e);return this.memory.get(key)??null;}}
+ async replace(key:string,value:string):Promise<void>{this.memory.set(key,value);if(!this.status.persistent){this.dirty.add(key);return;}try{await this.persistent.replace(key,value);}catch(e){this.dirty.add(key);this.unavailable(e);}}
 }

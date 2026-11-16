@@ -5,7 +5,7 @@ import { Shape, Sprite, type Node } from '../stage';
 import { COLOR, cover, drawFace } from '../ui';
 import {drawFocusedImage} from '../image-layout';
 import { STANDARD_MOODS } from '../portrait';
-import { castPortrait, packUnit, type Pack, type UnitDef } from '../pack/load';
+import { visibleContent, castPortrait, packUnit, type Pack, type UnitDef } from '../pack/load';
 import { preloadImages } from '../pack/images';
 import type { Sample } from './sample';
 type Entry={id:string; kind:'cast'|'unit'|'art';art?:string;unit?:UnitDef;cast?:string;missing?:boolean};
@@ -16,9 +16,9 @@ export class AssetBookScreen extends Screen {
   private selected=0;
   constructor(readonly pack:Pack,readonly sample:Sample){super();}
   private entries():Entry[]{
-    if(this.tab===0||this.tab===2)return Object.entries(this.pack.cast).filter(([id,c])=>!c.voiceOnly&&!this.pack.game.compatibility?.cast?.[id]).sort(([,a],[,b])=>Number(!!b.bust)-Number(!!a.bust)).filter(([,c])=>this.tab===2?!!c.bust&&(/portrait/.test(c.bust)||(c.moodSheet?.rect[2]===1&&c.moodSheet.rect[3]===1)):!c.bust||!(/portrait/.test(c.bust)||(c.moodSheet?.rect[2]===1&&c.moodSheet.rect[3]===1))).map(([id,c])=>({id,kind:'cast',cast:id,art:c.bust}));
-    if(this.tab===1)return Object.entries(this.pack.units).filter(([id])=>!this.pack.game.compatibility?.units?.[id]).flatMap(([id,u])=>[{id,kind:'unit' as const,unit:packUnit(this.pack,id,'player'),art:u.art,missing:!u.art&&!u.recolor},...Object.keys(u.forms??{}).map(form=>({id:`${id} / ${form}`,kind:'unit' as const,unit:packUnit(this.pack,id,'player',form),art:u.forms![form].art}))]);
-    return Object.keys(this.pack.game.art.files).filter(id=>/^(bg-|bbg-|cg-)/.test(id)).map(id=>({id,kind:'art',art:id}));
+    if(this.tab===0||this.tab===2)return Object.entries(this.pack.cast).filter(([id,c])=>!c.voiceOnly&&visibleContent(this.pack,'cast',id)&&!this.pack.game.compatibility?.cast?.[id]).sort(([,a],[,b])=>Number(!!b.bust)-Number(!!a.bust)).filter(([,c])=>this.tab===2?!!c.bust&&(/portrait/.test(c.bust)||(c.moodSheet?.rect[2]===1&&c.moodSheet.rect[3]===1)):!c.bust||!(/portrait/.test(c.bust)||(c.moodSheet?.rect[2]===1&&c.moodSheet.rect[3]===1))).map(([id,c])=>({id,kind:'cast',cast:id,art:c.bust}));
+    if(this.tab===1)return Object.entries(this.pack.units).filter(([id])=>visibleContent(this.pack,'units',id)&&!this.pack.game.compatibility?.units?.[id]).flatMap(([id,u])=>[{id,kind:'unit' as const,unit:packUnit(this.pack,id,'player'),art:u.art,missing:!u.art&&!u.recolor},...Object.keys(u.forms??{}).map(form=>({id:`${id} / ${form}`,kind:'unit' as const,unit:packUnit(this.pack,id,'player',form),art:u.forms![form].art}))]);
+    return Object.keys(this.pack.game.art.files).filter(id=>/^(bg-|bbg-|cg-)/.test(id)&&visibleContent(this.pack,'images',id)).map(id=>({id,kind:'art',art:id}));
   }
   private resources(e?:Entry):(HTMLImageElement|undefined)[]{if(!e)return [];const c=e.cast&&this.pack.cast[e.cast];return c?[this.sample.images[c.bust??''],...Object.values(c.moods??{}).map(id=>this.sample.images[id]),this.sample.images[c.moodSheet?.art??'']]:[this.sample.images[e.unit?.art??e.art??''],this.sample.images[e.unit?.icon??'']];}
   prepare():Promise<void>|void{return preloadImages(this.resources(this.entries()[0]));}

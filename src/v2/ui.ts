@@ -245,20 +245,20 @@ export function quietCgCard(name:string,title:string,color:string):Shape<{name:s
     ctx.font=`24px ${FONT.body}`;ctx.fillText(s.title,18,56,width-36);
   });
 }
-export function nameCard(name: string, sub: string, color: string): Shape<{ name: string; sub: string }> {
+export function nameCard(name: string, sub: string, color: string, maxWidth=W-80): Shape<{ name: string; sub: string }> {
   return new Shape({ name, sub }, (ctx, s) => {
-    ctx.font = `104px ${FONT.display}`;
-    const w = ctx.measureText(s.name).width + 126;
+    let size=104;ctx.font = `${size}px ${FONT.display}`;while(size>24&&ctx.measureText(s.name).width+126>maxWidth)ctx.font = `${--size}px ${FONT.display}`;
+    const w = Math.min(maxWidth,ctx.measureText(s.name).width + 126);
     const fill = ctx.createLinearGradient(0, 0, w, 0); fill.addColorStop(0, color); fill.addColorStop(1, '#12224f');
     ctx.save(); plate(ctx, 0, 0, w, 128, '#000', 'right'); ctx.clip(); ctx.fillStyle = fill; ctx.fillRect(0, 0, w, 128); ctx.restore();
     ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    ctx.fillStyle = '#06112e'; ctx.fillText(s.name, 56, 73);
-    ctx.fillStyle = '#fff'; ctx.fillText(s.name, 56, 68);
+    ctx.fillStyle = '#06112e'; ctx.fillText(s.name, 56, 73,maxWidth-112);
+    ctx.fillStyle = '#fff'; ctx.fillText(s.name, 56, 68,maxWidth-112);
     ctx.font = `700 24px ${FONT.body}`;
-    const subWidth = ctx.measureText(s.sub).width + 46;
+    const subWidth = Math.min(maxWidth-56,ctx.measureText(s.sub).width + 46);
     ctx.fillStyle = '#06112e'; ctx.fillRect(56, 138, subWidth, 42);
     ctx.fillStyle = COLOR.gold; ctx.fillRect(56, 138, 6, 42);
-    ctx.fillStyle = COLOR.ink; ctx.fillText(s.sub, 78, 160);
+    ctx.fillStyle = COLOR.ink; ctx.fillText(s.sub, 78, 160,subWidth-44);
   });
 }
 

@@ -2,7 +2,7 @@
 // 동일한 유닛 id는 편성·저장과 연결된다.
 @ 규칙
 무대: yard
-아군: hero = scout 1,2 파일럿 hero / loop = helper 1,3 파일럿 loop / wing = helper 2,3 파일럿 buddy
+아군: hero = scout 1,2 파일럿 hero / loop = helper 1,3 파일럿 loop / wing = helper 2,3 파일럿 buddy 조건 지원합류
 적: target = dummy 5,2 파일럿 dummy 대기
 승리: 적 전멸
 패배: 격파 hero

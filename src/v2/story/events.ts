@@ -30,6 +30,7 @@ export class StoryEvents {
         const runner = game.scenario!.runner, program = game.scenario!.program;
         let state = change?.after ?? game.battle;
         prepareRules(state);
+        for(const c of configOf(state.stage).combos)if(c.requiresFlag)setRuleVariable(state,c.requiresFlag,this.model.storyValue(c.requiresFlag));
         for(const c of configOf(state.stage).combos)setRuleVariable(state,c.flag,c.flag.startsWith('affection:')?this.model.storyAffection(c.flag.slice(10)):this.model.storyValue(c.flag));
         for(const [key,value]of Object.entries(runtime(state).vars))if(!configOf(state.stage).combos.some(c=>c.flag===key))this.model.setStoryValue(key,value);
         const candidate=this.pack.stageScripts?.[state.stage.id],compiled=candidate&&program.events.some(e=>e.loc.file===this.pack.stories[this.episode]?.file)?candidate:undefined;

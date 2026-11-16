@@ -1,5 +1,5 @@
 import type { ByteStore } from '../platform/storage';
-import {convertBalanceSave} from './save-migration';
+import {updateSave,progressAnchor,type ProgressAnchor} from './save-update';
 import { deserialize, serialize, fingerprint } from './session';
 import type { Session } from './session';
 import type { CampaignContent } from './content';
@@ -14,11 +14,11 @@ export interface SaveSummary { stage: string; turn?: number; credits: number; pi
 export interface SaveFile {
   packId:string; saveVersion: number; contentVersion: number; savedAt: string; playTimeMs: number; summary: SaveSummary;
   campaign: Session['campaign']; stageStart: Session['stageStart']; screen: Session['screen']; seed: number;
-  battle?: Record<string, unknown>; scenario?: unknown; migrationNotice?:{refund:number};
+  battle?: Record<string, unknown>; scenario?: unknown;progress?:ProgressAnchor; migrationNotice?:{refund:number;updated?:boolean;restartedStage?:boolean};
 }
 export interface Slot { id: SlotId; status: 'empty' | 'ok' | 'unreadable'; file?: SaveFile; error?: string }
 export const SAVE_VERSION = 6;
-/** Public save format starts here. Unknown and pre-split files are rejected. */
+/** Public save format starts here. Unsupported schemas and foreign packs are rejected; data revisions migrate by stable IDs. */
 export function migrate(value:unknown):SaveFile{const v=value as SaveFile;if(!v||v.saveVersion!==SAVE_VERSION)throw new Error('지원하지 않는 저장 버전');return structuredClone(v);}
 export function makeSave(session: Session, data: CampaignContent, playTimeMs: number, savedAt = new Date().toISOString()): SaveFile {
   const legacy = JSON.parse(serialize(session, data)), { game, ...rest } = legacy.session;
@@ -29,14 +29,14 @@ export function makeSave(session: Session, data: CampaignContent, playTimeMs: nu
   const credits=session.campaign.credits+Math.max(0,(session.game?.battle.credits??0)-(session.campaign.battleCredits??0));
   const summary: SaveSummary = { stage: session.screen==='end'?'캠페인 완료':currentStage?.name??'인터미션', credits, pilot: session.campaign.roster[0]?.pilotId };
   if (session.screen === 'battle') summary.turn = session.game!.battle.round;
-  return { packId:data.id??'default',saveVersion: SAVE_VERSION, contentVersion: legacy.fingerprint, savedAt, playTimeMs: Math.floor(playTimeMs), summary, ...rest, ...(game ? { battle, scenario: scenario.runner } : {}) };
+  return { packId:data.id??'default',saveVersion: SAVE_VERSION, contentVersion: legacy.fingerprint, savedAt, playTimeMs: Math.floor(playTimeMs), summary, ...rest, progress:progressAnchor(session.campaign,data), ...(game ? { battle, scenario: scenario.runner } : {}) };
 }
 export function restoreSave(value: unknown, data: CampaignContent, content: Content,legacyContent?:(c:import('./save-migration').SaveMigration)=>Content): { file: SaveFile; session: Session } {
   let file = migrate(value);
   if(file.packId!==(data.id??'default'))throw new Error('다른 팩의 저장 파일');
   if (!Number.isSafeInteger(file.playTimeMs) || file.playTimeMs < 0 || typeof file.savedAt !== 'string' || !Number.isFinite(Date.parse(file.savedAt)) || !file.summary || typeof file.summary.stage !== 'string') throw new Error('손상된 저장 정보');
-  if(file.contentVersion!==fingerprint(data)){const contract=data.saveMigrations?.find(c=>c.from.includes(file.contentVersion));if(!contract)throw Error('저장 파일과 콘텐츠 버전이 다릅니다');restoreSave(file,contract.campaign,legacyContent?.(contract)??contract.content);file=convertBalanceSave(file,data,content,contract).file;}
-  if(file.migrationNotice&&(!Number.isSafeInteger(file.migrationNotice.refund)||file.migrationNotice.refund<0))throw Error('손상된 변환 정보');
+  if(file.contentVersion!==fingerprint(data)){const contract=data.saveMigrations?.find(c=>c.from.includes(file.contentVersion));if(contract)restoreSave(file,contract.campaign,legacyContent?.(contract)??contract.content);file=updateSave(file,data,content,contract);}
+  if(file.migrationNotice&&(!Number.isSafeInteger(file.migrationNotice.refund)||file.migrationNotice.refund<0||file.migrationNotice.restartedStage!==undefined&&typeof file.migrationNotice.restartedStage!=='boolean'||file.migrationNotice.updated!==undefined&&typeof file.migrationNotice.updated!=='boolean'))throw Error('손상된 변환 정보');
   const { campaign, stageStart, screen, seed, battle, scenario } = file;
   const session = deserialize(JSON.stringify({ version: 'srpg-session-2', fingerprint: file.contentVersion, session: { campaign, stageStart, screen, seed, game: battle ? { ...battle, scenario: { runner: scenario } } : null } }), data, content);
   if(session.game)validateResume(session.game);

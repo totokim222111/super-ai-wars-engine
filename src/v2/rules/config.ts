@@ -29,7 +29,7 @@ export interface UnitRule {
     third?: boolean;
 }
 export interface ComboRule {
-    joined?:string;powerMultiplier?:number;virtualParticipants?:string[];
+    requiresFlag?:string;joined?:string;powerMultiplier?:number;virtualParticipants?:string[];
     participants?:string[];
     costs?:number[];
     morale?:number;

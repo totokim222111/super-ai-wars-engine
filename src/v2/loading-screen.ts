@@ -3,7 +3,7 @@ import {W,H} from './stage';
 import {focalImageRect,type ImageFocus} from './image-layout';
 import type {BattleLines} from './battle/lines';
 
-export interface LoadingEntry {image:string;cast:string;focus?:ImageFocus}
+export interface LoadingEntry {image:string;cast:string;requiresFlag?:string;focus?:ImageFocus}
 export interface LoadingSlide extends LoadingEntry {name:string;color:string;lines:string[]}
 export interface LoadingManifest {screens:LoadingSlide[];fallbacks:LoadingSlide[];playerName:string;placeholders:Record<string,'name'|'unitName'>}
 
@@ -52,11 +52,14 @@ export class LoadingScreen {
  constructor(readonly manifest:LoadingManifest,private readonly read:(path:string)=>Promise<HTMLImageElement|undefined>,private readonly random=Math.random){
   this.resolve=text=>text.replace(/\{([^{}]+)\}/g,(whole,key:string)=>manifest.placeholders[key]==='name'?manifest.playerName:whole);
  }
- private pool():LoadingSlide[]{return this.manifest.screens.length?this.manifest.screens:this.manifest.fallbacks;}
+ flagValue:(name:string)=>string|number|boolean=()=>false;
+ private allowed=(s:LoadingSlide):boolean=>!s.requiresFlag||this.flagValue(s.requiresFlag)===true||this.flagValue(s.requiresFlag)===1;
+ private pool():LoadingSlide[]{const main=this.manifest.screens.filter(this.allowed);return main.length?main:this.manifest.fallbacks.filter(this.allowed);}
  begin():void{
   const serial=++this.serial;this.elapsed=this.appeared=0;this.progress.reset();this.image=undefined;this.rawQuote='';
+  if(this.next&&!this.allowed(this.next.slide))this.next=undefined;
   const chosen=this.next?.slide??chooseSlide(this.pool(),this.last,this.random),prefetched=this.next;this.next=undefined;this.slide=chosen;
-  this.pending=(async()=>{const rest=[...this.pool(),...this.manifest.fallbacks].filter(s=>s.image!==chosen?.image),seen=new Set<string>();
+  this.pending=(async()=>{const rest=[...this.pool(),...this.manifest.fallbacks.filter(this.allowed)].filter(s=>s.image!==chosen?.image),seen=new Set<string>();
    for(const slide of [...chosen?[chosen]:[],...rest]){if(seen.has(slide.image))continue;seen.add(slide.image);let image:HTMLImageElement|undefined;
     try{image=await(prefetched?.slide===slide?prefetched.image:this.read(slide.image));}catch{/* Optional loading art never blocks play. */}
     if(serial!==this.serial)return;if(!image?.naturalWidth)continue;

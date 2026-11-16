@@ -28,6 +28,7 @@ export class Input {
       this.off.push(() => target.removeEventListener(type, handler as EventListener));
     };
     listen(window, 'keydown', (event: KeyboardEvent) => {
+      if(event.key!=='Escape'&&event.target instanceof Element&&event.target.closest('input,textarea,[contenteditable]'))return;
       const action = KEYS[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (!action || event.altKey || event.metaKey) return;
       event.preventDefault();

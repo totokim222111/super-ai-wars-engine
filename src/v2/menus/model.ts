@@ -58,6 +58,9 @@ export interface MenuQueries {
   training?(unitId:string):PilotTraining|undefined;
   train?(unitId:string,statId:string):boolean;
   learn?(unitId:string,skillId:string):boolean;
+  saveCode?():Promise<string>;
+  importSaveCode?(code:string):Promise<void>;
+  storageNotice?:string;
   slots(): SaveSlot[];
   save(slot: string): Promise<void>;
   load(slot: string): Promise<void>;

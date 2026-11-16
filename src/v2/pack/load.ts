@@ -67,6 +67,7 @@ interface Fallback {
 }
 export interface StageAdjustment {enemyPilotScaling?:import('../../core').EnemyPilotScaling;content?:import('../../core').Stage['contentOverrides'];units?:Record<string,Partial<import('../../core').StageUnit>>;rules?:Partial<RulesConfig>;enemyUpgradeLevel?:number;aliases?:Record<string,string>}
 export interface PackGame {
+    visibility?:{flag:string;cast?:string[];units?:string[];images?:string[];scenes?:string[]}[];
     recruitment?:import('./progression').Recruitment;
     loadingScreens?:import('../loading-screen').LoadingEntry[];
     loadingScreenFallbacks?:import('../loading-screen').LoadingEntry[];
@@ -132,6 +133,7 @@ export interface PackGame {
 
 }
 export interface Pack {
+    progressFlag?:(flag:string)=>string|number|boolean;
     assets?:import('./assets').StageLoader;
     stageRewards?:Record<string,Record<string,number>>;
     battleDialogue?:PackBattleDialogue;
@@ -442,3 +444,5 @@ export function packLookup(p: Pick<Pack, 'cast' | 'units' | 'weapons' | 'spirits
     };
     return {unitInfo:p.game.unitInfo,terrainFor:s=>{const theme=p.maps?.[p.stageScripts?.[s.stage.id]?.setting??p.game.defaultMap??Object.keys(p.maps??{})[0]];return theme?{tiles:s.stage.map.tiles,theme,images,painted:p.stageScripts?.[s.stage.id]?.mapArt}:undefined;},aiCommand:(s,c)=>stageAI(p.stageScripts?.[s.stage.id],s,c),terrain:images[p.game.fallbacks.terrain],background:images[p.game.fallbacks.background],backgroundFor:stageId=>images[p.game.episodes?.find(e=>e.stage===stageId)?.battleBackground??p.game.fallbacks.background],unit:(m,u)=>{const d=unit(m.id,u.side,u.formId);return {icon:images[d.icon??d.art],...(!d.icon?{iconFit:true}:{}),...(!d.icon&&d.iconCrop?{iconCrop:d.iconCrop}:{})};},battle:{mech:(m,u)=>{const d=unit(m.id,u.side,u.formId);return {image:images[d.art],height:d.height??335,faces:d.faces??(u.side==='player'?'left':'right'),anchors:d.anchors};},pilot:(pilot,u)=>{const requested=unit(u.mechId,u.side,u.formId).pilotCast;const id=castId(u,pilot);const r=p.cast[id]?.cutin;return {portrait:portrait(id),...(p.game.anonymousPilots?.includes(pilot.id)&&requested?{pilot:p.cast[id].name}:{}),...(r?{cutin:{x:r[0],y:r[1],w:r[2],h:r[3]}}:{})};},castId,lineWeapon:id=>p.weapons[id]?.lineSource??id,battleLines:(u,pilot)=>{const generic=p.game.anonymousPilots?.includes(pilot.id)?p.battleDialogue?.defaults?.enemy:undefined;return generic&&!unit(u.mechId,u.side,u.formId).pilotCast?generic:p.cast[castId(u,pilot)]?.battleLines??generic;},text:text=>text.replace(/\{([^{}]+)\}/g,(token,key:string)=>values?.()[p.players?.placeholders?.[key]??'']??token),comboDialogue:id=>p.battleDialogue?.combos?.find(c=>c.binding?.ids.includes(id)),side:u=>u.side==='enemy'?'enemy':'ally',weapon:w=>({...p.weapons[w.id],anim:p.weapons[w.id]?.anim??{template:'heavy-shot'},cutin:p.weapons[w.id]?.cutin??p.weapons[w.id]?.anim.template==='finisher'})},spirit:d=>({name:d.name,...(p.spirits[d.id]??{kind:'focus'})})};
 }
+
+export function visibleContent(pack:Pack,kind:'cast'|'units'|'images'|'scenes',id:string):boolean{return (pack.game.visibility??[]).filter(r=>r[kind]?.includes(id)).every(r=>pack.progressFlag?.(r.flag)===true||pack.progressFlag?.(r.flag)===1);}

@@ -10,7 +10,7 @@ import {applySystem} from '../../core/system';
 import {effectiveWeapon} from '../../core/modifiers';
 import {finishAction,resetActions,hasActed} from '../../core/actions';
 export const comboMembers=(c:ComboRule):string[]=>c.participants??[c.lead,c.partner];
-const comboUnlocked=(s:BattleState,c:ComboRule):boolean=>c.joined?!!s.units.find(u=>u.id===c.joined&&u.alive&&faction(u)===phase(s)):c.affection?Number(runtime(s).vars[c.flag]??0)>=c.affection.min:runtime(s).vars[c.flag]===true||runtime(s).vars[c.flag]===1;
+const comboUnlocked=(s:BattleState,c:ComboRule):boolean=>(!c.requiresFlag||runtime(s).vars[c.requiresFlag]===true||runtime(s).vars[c.requiresFlag]===1)&&(c.joined?!!s.units.find(u=>u.id===c.joined&&u.alive&&faction(u)===phase(s)):c.affection?Number(runtime(s).vars[c.flag]??0)>=c.affection.min:runtime(s).vars[c.flag]===true||runtime(s).vars[c.flag]===1);
 const STATE = 'v2-rules-state', COMMAND = 'v2-rules-command', TEMP = 'v2-query-', PERK = 'v2-form-perk', HASTE = 'v2-haste';
 export type Faction = 'player' | 'enemy' | 'third' | 'neutral';
 export interface Runtime {

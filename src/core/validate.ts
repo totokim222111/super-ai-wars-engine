@@ -179,6 +179,7 @@ export function validateStage(value: unknown, content: Content): asserts value i
   const occupied = new Set<string>();
   units.forEach((v, i) => {
     const p = `stage.units[${i}]`, u = obj(v, p);
+    optional(u,'requiresFlag',str,p);
     refs(u.pilotId, pilots, `${p}.pilotId`); refs(u.mechId, mechs, `${p}.mechId`);
     choice(u.side, sides, `${p}.side`); optional(u, 'ai', (v, p) => choice(v, aiTypes, p), p);
     validateLoadout(u,p,content);

@@ -13,6 +13,7 @@ export function initializeUnit(s: BattleState, initial: StageUnit): Unit {
   })), morale: Math.max(s.content.rules.morale.min, Math.min(s.content.rules.morale.max, initial.pilotOverrides?.startMorale??p.startMorale ?? s.content.rules.morale.start)), sp: p.sp,
   moved: false, acted: false, alive: true, moveOrigin: null, effects: [] };
   if(p.growth || p.spirits || initial.level !== undefined) {u.level=initial.level??1;u.exp=initial.exp??0;}
+  delete u.requiresFlag;
   u.hp=mechOf(s,u).hp;u.en=mechOf(s,u).en;u.sp=pilotOf(s,u).sp;
   if(m.devices?.length)u.deviceUses=Object.fromEntries(m.devices.filter(d=>d.uses!==null).map(d=>[d.id,d.uses!]));
   if(m.subPilots?.length)u.subPilots=m.subPilots.map(pilotId=>{const progress=initial.subPilotProgress?.find(p=>p.pilotId===pilotId),pilot=s.content.pilots.find(p=>p.id===pilotId)!,level=progress?.level??u.level??1;return {pilotId,level,exp:progress?.exp??0,sp:pilot.sp+(pilot.spGrowth??0)*(level-1)};});
