@@ -21,6 +21,26 @@
       "sha256": "0a647c03ca6a56103b885a2450af48de25bfff7758716d61ed29419a67c5f963"
     },
     {
+      "path": "LICENSE",
+      "size": 1932,
+      "sha256": "74d74ae8c1f4cb236d544a48557df9f07f32166bce077b777ea7d7d540f72612"
+    },
+    {
+      "path": "PUBLISHING.md",
+      "size": 1737,
+      "sha256": "af02f0790097c3e594fc307333cb596cee77b5aed06e5452527758077554d4ef"
+    },
+    {
+      "path": "README.md",
+      "size": 7133,
+      "sha256": "0cdf49f43a8435bb892679aedfa11befd215118d2185c7d84e115f2d8948efd1"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "size": 1816,
+      "sha256": "75c623a65dc5a4f343f2f165b1b7c13d22bf85a91d15ec63e0cc2b06a81a65bd"
+    },
+    {
       "path": "content/rules/default.json",
       "size": 1518,
       "sha256": "4455dbcb518839b4ca213bc8c543b489b6def1edc9fd87c8fa7f317c3eb85150"
@@ -56,11 +76,6 @@
       "sha256": "92847ad87ccf6435d727b00375e4aa0a23fb703f6efed44fee1be491fdce3939"
     },
     {
-      "path": "LICENSE",
-      "size": 1932,
-      "sha256": "74d74ae8c1f4cb236d544a48557df9f07f32166bce077b777ea7d7d540f72612"
-    },
-    {
       "path": "package-lock.json",
       "size": 37043,
       "sha256": "8d64b2e6be28c83a5c601dc58fa84d35f66a2016467098750d515c500e31ac96"
@@ -69,6 +84,16 @@
       "path": "package.json",
       "size": 847,
       "sha256": "cd425a7cbf63c986dd79bee39e003a5dd04122dd8901d0209a7fd12cc7a10375"
+    },
+    {
+      "path": "packs/example/README.md",
+      "size": 1116,
+      "sha256": "458ac768e80ab30072ca08d4eae21d844168ee940a2f9e80257192c1a7010d75"
+    },
+    {
+      "path": "packs/example/art-info.json",
+      "size": 993,
+      "sha256": "5b64c89d8640d253f85f837e85e16e40e137534139c6c0f48f66fd7e7ba6f94a"
     },
     {
       "path": "packs/example/art/bg-arena.webp",
@@ -131,9 +156,14 @@
       "sha256": "cc4fe6846a0f5123aba81d8207a5aeca882697d8de115753e441fe9f58979ec5"
     },
     {
-      "path": "packs/example/art-info.json",
-      "size": 993,
-      "sha256": "5b64c89d8640d253f85f837e85e16e40e137534139c6c0f48f66fd7e7ba6f94a"
+      "path": "packs/example/audio/LICENSES.md",
+      "size": 2737,
+      "sha256": "4500affaee43cb0346a4061b43a46d893c770e8ab240be594611de4f1ffce7db"
+    },
+    {
+      "path": "packs/example/audio/README.md",
+      "size": 392,
+      "sha256": "1cd4124df5ad1a9792def95c8ee071b322b27796e3d640a183f54c313f56a27f"
     },
     {
       "path": "packs/example/audio/bgm/battle-237f54ac2ee8.mp3",
@@ -151,19 +181,9 @@
       "sha256": "432aacd9dc91c183db83885a11c2d0da14f5a53d5c505ccfbe165617ad931608"
     },
     {
-      "path": "packs/example/audio/LICENSES.md",
-      "size": 2737,
-      "sha256": "4500affaee43cb0346a4061b43a46d893c770e8ab240be594611de4f1ffce7db"
-    },
-    {
       "path": "packs/example/audio/pack.json",
       "size": 10984,
       "sha256": "f095341da266bab27af2303ec7642da62c46d4ce09e16f3e5a37b7414d6c62f3"
-    },
-    {
-      "path": "packs/example/audio/README.md",
-      "size": 392,
-      "sha256": "1cd4124df5ad1a9792def95c8ee071b322b27796e3d640a183f54c313f56a27f"
     },
     {
       "path": "packs/example/audio/sfx/alarm-cbdd6180a235.mp3",
@@ -361,11 +381,6 @@
       "sha256": "f9ffbd40d017bde701581d3c1597c173b2f211ec20e8eaa8b7f846d8e7dfb5e4"
     },
     {
-      "path": "packs/example/README.md",
-      "size": 1116,
-      "sha256": "458ac768e80ab30072ca08d4eae21d844168ee940a2f9e80257192c1a7010d75"
-    },
-    {
       "path": "packs/example/rules.json",
       "size": 395,
       "sha256": "cea4bb213d33ccc4f5ce02bd23f2b185171783dd2ef3be59f9d6ae06d642e10b"
@@ -411,29 +426,19 @@
       "sha256": "0af42f20d66430406c98e50ba869fdea3d9d6a0df4ba92526cc7f9a9cbf622a0"
     },
     {
-      "path": "packs/example/video/demo.mp4",
-      "size": 1300665,
-      "sha256": "dac4ede6652286a8d13a2d8d9b1955570d4e3d031419c1a8c4c0e5d2382b0894"
-    },
-    {
       "path": "packs/example/video/README.md",
       "size": 866,
       "sha256": "08529d1dbae304969c31d67ca36bf4e7b742c9df5c2ebd5ac47293358560ceb5"
     },
     {
+      "path": "packs/example/video/demo.mp4",
+      "size": 1300665,
+      "sha256": "dac4ede6652286a8d13a2d8d9b1955570d4e3d031419c1a8c4c0e5d2382b0894"
+    },
+    {
       "path": "packs/example/weapons.json",
       "size": 1653,
       "sha256": "8957a0de724bcc956d9bebc15879ff34d51b5c451deab3b667155dbf88ba8c7a"
-    },
-    {
-      "path": "PUBLISHING.md",
-      "size": 1719,
-      "sha256": "9d9f441f59fc2dc0b1166fc766129ad46c3ea11fc02f3854b3af3af2e30a9fa8"
-    },
-    {
-      "path": "README.md",
-      "size": 7112,
-      "sha256": "ed4e3dcfdc1d0517e210c16bbdf3ad927fa967f5363983070c2d3d3e54e83762"
     },
     {
       "path": "src/campaign/conditions.ts",
@@ -956,6 +961,11 @@
       "sha256": "c92aba382bfd403467f746141f059b00bfd8dba67575fdb6b40efea67941711f"
     },
     {
+      "path": "src/v2/game-entry.ts",
+      "size": 75,
+      "sha256": "e03d0296792606f660f33116ea1cc91973f65f77e6cbe0224f4cc9be4cf24a61"
+    },
+    {
       "path": "src/v2/game/flow.ts",
       "size": 22231,
       "sha256": "f92d5dac09683fcb1fed6b3dab5231d681427016ec54e248f3822eecc37e94be"
@@ -969,11 +979,6 @@
       "path": "src/v2/game/start.ts",
       "size": 2404,
       "sha256": "d5492915a094a5ae0043b754206d23b7005d65e75320206a780b1a05eeff7fc5"
-    },
-    {
-      "path": "src/v2/game-entry.ts",
-      "size": 75,
-      "sha256": "e03d0296792606f660f33116ea1cc91973f65f77e6cbe0224f4cc9be4cf24a61"
     },
     {
       "path": "src/v2/grid-menu.ts",
@@ -1601,11 +1606,6 @@
       "sha256": "568ab2dd7103d1a22d2e26afb97a0154377a0627f105af60210f5f8895cc03bf"
     },
     {
-      "path": "THIRD_PARTY_NOTICES.md",
-      "size": 1816,
-      "sha256": "75c623a65dc5a4f343f2f165b1b7c13d22bf85a91d15ec63e0cc2b06a81a65bd"
-    },
-    {
       "path": "tools/art_info.mjs",
       "size": 1273,
       "sha256": "71907d1e82d9de3f11751bb909a5c8fdbf92068e3f392293b617c708acf06925"
@@ -1745,5 +1745,10 @@
       "size": 370,
       "sha256": "28eece8903bef6bb29bac6b1c396c4bb86c508c4dc80854a3ace0e9a844ad8dc"
     }
-  ]
+  ],
+  "publication": {
+    "releaseTag": "v2026.11.17-r2",
+    "inputArchive": "super-ai-wars-engine-2026-11-17.zip",
+    "inputArchiveSha256": "f9c1aa18ec5d4e1606d65d89cf6d300b3629af8629af5098d2e76dde684e6a09"
+  }
 }

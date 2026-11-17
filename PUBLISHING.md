@@ -10,6 +10,6 @@
 
 `EXPORT-MANIFEST.json` 또는 `ASSETS-EXPORT-MANIFEST.json`은 자기 자신과 Git 관리 파일을 제외한 공개 파일의 크기와 SHA-256을 기록합니다. 배포 원본은 작업실의 `out/release-zips/manifest.json`에 기록된 엔진 테스트·빌드, 게임 빌드·공개 검사를 통과했으며, GitHub 공개 준비에서는 안내 문서·주소·제외 규칙을 정리했습니다.
 
-## 2026-11-17 공개본
+## 2026-11-17 업데이트 2 공개본
 
-[최신 ZIP과 일반판·타입 O 미남판](https://github.com/totokim222111/super-ai-wars/releases/tag/v2026.11.17)을 함께 제공합니다. 이 저장소의 실행 코드·게임 데이터·어셋은 `super-ai-wars-engine-2026-11-17.zip`과 일치합니다. README의 AI 요청문과 PLEASE의 감사 문구는 공개 저장소에서 정리한 내용을 유지합니다. 배포 파일과 원본 ZIP의 SHA-256은 릴리스의 `release-manifest.json`에 기록합니다.
+[최신 ZIP과 일반판·타입 O 미남판](https://github.com/totokim222111/super-ai-wars/releases/tag/v2026.11.17-r2)을 함께 제공합니다. 이 저장소의 실행 코드·게임 데이터·어셋은 `super-ai-wars-engine-2026-11-17.zip`과 일치합니다. README의 AI 요청문과 PLEASE의 감사 문구는 공개 저장소에서 정리한 내용을 유지합니다. 배포 파일과 원본 ZIP의 SHA-256은 릴리스의 `release-manifest.json`에 기록합니다.

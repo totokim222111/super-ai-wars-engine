@@ -4,7 +4,7 @@
 
 이 엔진으로 만든 15화짜리 게임 [슈퍼 AI 대전](https://github.com/totokim222111/super-ai-wars)도 함께 공개되어 있습니다.
 
-2026-11-17 소스 공개본입니다. [소스 ZIP](https://github.com/totokim222111/super-ai-wars/releases/download/v2026.11.17/super-ai-wars-engine-2026-11-17.zip)과 [일반판·타입 O 미남판 실행 ZIP](https://github.com/totokim222111/super-ai-wars/releases/tag/v2026.11.17)을 받을 수 있습니다.
+2026-11-17 업데이트 2 소스 공개본입니다. [소스 ZIP](https://github.com/totokim222111/super-ai-wars/releases/download/v2026.11.17-r2/super-ai-wars-engine-2026-11-17.zip)과 [일반판·타입 O 미남판 실행 ZIP](https://github.com/totokim222111/super-ai-wars/releases/tag/v2026.11.17-r2)을 받을 수 있습니다.
 
 ## 바로 실행해 보기
 
