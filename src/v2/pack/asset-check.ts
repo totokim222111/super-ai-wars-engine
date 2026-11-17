@@ -1,9 +1,12 @@
+import {animationSprites} from '../battle/animation-art';
 import type { Pack } from './load';
 export interface ArtInfo {width:number;height:number;bytes:number;empty?:number[]}
 /** 픽셀/파일 I/O는 CLI가 한다. 동일한 검사 결과를 테스트에서도 쓴다. */
 export function assetWarnings(p:Pack,info:Record<string,ArtInfo>):void {
   const add=(id:string,kind:string,message:string,fix:string)=>p.warnings.push({file:`${p.root}/game.json`,line:Math.max(1,(p.sources[`${p.root}/game.json`]?.slice(0,p.sources[`${p.root}/game.json`].indexOf(`"${id}"`)).match(/\n/g)?.length??0)+1),kind,message:`${id}: ${message}`,fix});
+  for(const [id,s]of animationSprites(p.animationArt)){const r=s.rect,i=info[s.art];if(r&&i&&(r[0]+r[2]>i.width||r[1]+r[3]>i.height))p.errors.push({file:p.root+'/game.json',line:1,message:'연출 아틀라스 실제 크기 밖: '+id,fix:'원본 아틀라스 크기와 rect를 맞추세요.'});}
   const specs=new Map<string,{w:number;h:number;kb:number}>();
+  for(const [id,page]of Object.entries(p.animationArt?.pages??{}))specs.set(id,{w:page.width,h:page.height,kb:1600});
   for(const c of Object.values(p.cast)){
     const portrait=/portrait/.test(c.bust??'')||(c.moodSheet?.rect[2]===1&&c.moodSheet.rect[3]===1);
     const spec=portrait?{w:768,h:768,kb:120}:{w:1024,h:1536,kb:280};

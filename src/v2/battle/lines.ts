@@ -1,10 +1,10 @@
 /** Presentation-only speech. Combat RNG and rule values are never changed here. */
-export interface BattleLine {text:string;mood?:string;when?:{forms?:string[];mechs?:string[]}}
+export interface BattleLine {text:string;mood?:string;when?:{forms?:string[];mechs?:string[];kinds?:string[]}}
 export type Speech=string|BattleLine;
 export type BattleSituation='attack'|'finisher'|'hitLight'|'hitHeavy'|'dodge'|'guard'|'defeated'|'victory'|'resupply'|'repair'|'cheer';
 export type BattleLineSet=Partial<Record<BattleSituation,BattleLine[]>>&{weapons?:Record<string,BattleLine[]>;afterFormChange?:BattleLine[]};
 export type BattleLines=BattleLineSet&{mode?:'sequence'|'random';opponentChance?:number;opponents?:Record<string,BattleLineSet>;forms?:Record<string,BattleLineSet>};
-export interface BattleLineContext {form?:string;mech?:string;formChanged?:boolean}
+export interface BattleLineContext {form?:string;mech?:string;formChanged?:boolean;speaker?:string;kind?:string}
 export interface ComboDialogue {name:string;participants:{cast:string;speech:BattleLine}[];finish:{cast:string;speech:BattleLine};binding?:{ids:string[];participants:string[]}}
 export interface PackBattleDialogue {defaults?:{enemy?:BattleLines};combos?:ComboDialogue[]}
 const situations:BattleSituation[]=['attack','finisher','hitLight','hitHeavy','dodge','guard','defeated','victory','resupply','repair','cheer'];
@@ -17,7 +17,7 @@ export function battleLineIssues(value:unknown,moods:string[]):string[]{
   const rows=(v:unknown,p:string)=>{if(!Array.isArray(v)){errors.push(p+': 문장 목록이 필요합니다.');return;}for(const [i,line]of v.entries()){
    if(!line||typeof line!=='object'||Array.isArray(line)||typeof line.text!=='string'||!line.text.trim()||Object.keys(line).some(k=>!['text','mood','when'].includes(k)))errors.push(`${p}[${i}]: 비어 있지 않은 text와 선택 mood/when을 적으세요.`);
    else{if(line.mood!==undefined&&(typeof line.mood!=='string'||!moods.includes(line.mood)))errors.push(`${p}[${i}]: 없는 표정 ${String(line.mood)}`);
-    if(line.when!==undefined&&(!line.when||typeof line.when!=='object'||Array.isArray(line.when)||Object.entries(line.when).some(([k,v])=>!['forms','mechs'].includes(k)||!Array.isArray(v)||!v.length||v.some(x=>typeof x!=='string'))))errors.push(p+': when.forms/mechs 문자열 배열이 필요합니다.');
+    if(line.when!==undefined&&(!line.when||typeof line.when!=='object'||Array.isArray(line.when)||Object.entries(line.when).some(([k,v])=>!['forms','mechs','kinds'].includes(k)||!Array.isArray(v)||!v.length||v.some(x=>typeof x!=='string'))))errors.push(p+': when.forms/mechs/kinds 문자열 배열이 필요합니다.');
    }
   }};
   for(const key of [...situations,'afterFormChange'])if(o[key]!==undefined)rows(o[key],path+'.'+key);
@@ -29,10 +29,13 @@ export function battleLineIssues(value:unknown,moods:string[]):string[]{
  };
  set(value,'battleLines',true);return errors;
 }
-export function lineMatches(line:BattleLine,context:BattleLineContext):boolean{const w=line.when;return !w||!w.forms&&!w.mechs||!!w.forms?.includes(context.form??'')||!!w.mechs?.includes(context.mech??'');}
+export function lineMatches(line:BattleLine,context:BattleLineContext):boolean{const w=line.when;return (!w?.kinds||w.kinds.includes(context.kind??''))&&(!w||!w.forms&&!w.mechs||!!w.forms?.includes(context.form??'')||!!w.mechs?.includes(context.mech??''));}
+export function compatibleAttack(text:string,kind?:string):boolean{return !kind||kind==='melee'?!kind||!/광선|레이저|빔|미사일|사격|발사/.test(text):!/박치기|주먹|너클|베어 버|베어버|칼날|스매시/.test(text);}
 /** One selector per exchange: no sentence repeats through counters, support or second attacks. */
 export class BattleLinePicker {
  private used=new Set<string>();private random:number;
+ private last=new Map<string,string>();readonly picks:{speaker:string;text:string;kind?:string}[]=[];
+ beginExchange():void{this.used.clear();}
  constructor(seed=1){this.random=seed>>>0||1;}
  private next():number{this.random^=this.random<<13;this.random^=this.random>>>17;this.random^=this.random<<5;return this.random>>>0;}
  pick(bank:BattleLines|undefined,situation:BattleSituation,weapon?:string,opponent?:string,context:BattleLineContext={}):BattleLine|undefined{
@@ -41,8 +44,8 @@ export class BattleLinePicker {
   const rival=candidate&&attack&&(bank.opponentChance===undefined||this.next()/0x100000000<bank.opponentChance)?candidate:undefined,form=context.form?bank.forms?.[context.form]:undefined;
   const fallback=situation==='finisher'?'attack':situation==='hitHeavy'?'hitLight':undefined;
   const pools=[attack&&weapon?rival?.weapons?.[weapon]:undefined,rival?.[situation],fallback?rival?.[fallback]:undefined,attack&&context.formChanged?form?.afterFormChange??bank.afterFormChange:undefined,attack&&weapon?form?.weapons?.[weapon]:undefined,form?.[situation],fallback?form?.[fallback]:undefined,attack&&weapon?bank.weapons?.[weapon]:undefined,bank[situation],fallback?bank[fallback]:undefined];
-  for(const pool of pools){const available=pool?.filter(line=>line.text.trim()&&!this.used.has(line.text)&&lineMatches(line,context));if(!available?.length)continue;
-   const line=available[bank.mode==='random'?this.next()%available.length:0];this.used.add(line.text);return {...line};
+  for(const pool of pools){const explicit=attack&&weapon&&(pool===bank.weapons?.[weapon]||pool===form?.weapons?.[weapon]||pool===rival?.weapons?.[weapon]),available=pool?.filter(line=>line.text.trim()&&!this.used.has(line.text)&&lineMatches(line,context)&&(!attack||explicit||compatibleAttack(line.text,context.kind))&&(!context.speaker||explicit||this.last.get(context.speaker)!==line.text));if(!available?.length)continue;
+   const line=available[bank.mode==='random'?this.next()%available.length:0];this.used.add(line.text);if(attack&&context.speaker){this.last.set(context.speaker,line.text);this.picks.push({speaker:context.speaker,text:line.text,kind:context.kind});}return {...line};
   }
  }
 }

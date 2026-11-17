@@ -26,7 +26,9 @@ export class ImageStore {
   }
   get(id:string):HTMLImageElement|undefined {if(!Object.hasOwn(this.definitions,id))return;let entry=this.entries.get(id);if(!entry){const def=this.definitions[id],key=typeof def==='string'?this.url(def):JSON.stringify([def.from,def.hue,def.sat,def.light]),shared=this.shared.get(key);if(shared){entry=shared;this.entries.set(id,entry);}else{const image=this.create();this.entries.set(id,entry={image,status:'idle'});this.shared.set(key,entry);owners.set(image,{store:this,id});}}return entry.status==='missing'?undefined:entry.image;}
   status(id:string):ImageStatus{return this.entries.get(id)?.status??(Object.hasOwn(this.definitions,id)?'idle':'missing');}
-  private read(url:string,image:HTMLImageElement):Promise<boolean>{return this.fetchImage?.(url,image)??new Promise(resolve=>{image.onload=()=>resolve(true);image.onerror=()=>resolve(false);image.src=url;});}
+  /** Pay the first raster upload while the section loading screen is still visible. */
+  warm(ids:readonly string[]):void{if(typeof document==='undefined')return;try{const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d');if(!ctx)return;for(const id of ids){const entry=this.entries.get(id);if(entry?.status==='ready'&&entry.image.naturalWidth)ctx.drawImage(entry.image,0,0,64,64);}}catch{/* Privacy/headless restrictions retain the ordinary lazy drawing fallback. */}}
+  private async read(url:string,image:HTMLImageElement):Promise<boolean>{const loaded=await(this.fetchImage?.(url,image)??new Promise<boolean>(resolve=>{image.onload=()=>resolve(true);image.onerror=()=>resolve(false);image.src=url;}));if(!loaded)return false;try{await image.decode?.();return true;}catch{return false;}}
   preload(ids:readonly string[]):Promise<void>{return Promise.all([...new Set(ids)].map(id=>this.load(id,[]))).then(()=>undefined);}
   private load(id:string,chain:string[]):Promise<void>{
     if(chain.includes(id))return Promise.resolve();

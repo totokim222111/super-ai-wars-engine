@@ -1,3 +1,8 @@
+import {resolveUiSize}from'../presentation';
+import {largeUi} from '../presentation';
+import {GridMenu} from '../grid-menu';
+import {touchInput} from '../presentation';
+import {FirstGuide} from './tutorial';
 import {Tooltip,spiritTip} from '../tooltip';
 import {hintOrder,hintLabel,type MapHint,type HintOptions} from './hints';
 import {Shape as HintShape} from '../stage';
@@ -14,11 +19,11 @@ import {term} from '../terms';
  * 맵 화면: 기체를 고르고, 움직이고, 명령을 내리는 곳.
  *
  * 조작의 흐름(원작과 같다). 취소(Esc, 오른쪽 버튼)는 언제나 한 단계 앞으로 돌아간다.
- *   대기 → 기체 선택(이동 범위 표시) → 목적지 선택(기체가 가 본다) → 명령 메뉴
- *     · 공격: 대상 선택 → 무기 선택 → 전투 전 예측 → 전투
+ *   대기 → 기체 선택 → 목적지 → 무기 → 대상 → 예측 → 전투
+ *     · 다른 명령: 정신기·장치·대기 등의 명령 메뉴로
  *     · 정신기: 목록에서 골라 발동, 다시 명령 메뉴로
  *     · 대기: 그 자리에서 행동을 마친다
- *   빈 칸을 고르면 맵 메뉴(턴 종료).
+ *   빈 칸 한 번은 커서, 길게 누르기/두 번 클릭 또는 메뉴/M은 맵 메뉴.
  *
  * 이 화면은 규칙을 모른다. 갈 수 있는 칸, 칠 수 있는 적, 행동의 결과는 모두 MapModel이 알려 준다.
  * 화면이 하는 일은 묻고, 보여 주고, 돌려받은 "일어난 일"을 순서대로 트는 것뿐이다.
@@ -27,7 +32,7 @@ import { BattleScreen } from '../battle/screen';
 import { ConfirmScreen } from '../dialogs';
 import { until, wait, type Step } from '../flow';
 import {flash } from '../fx';
-import { Button, hintBar, windowFrame, MenuList,toast, type MenuItem, type Widget } from '../kit';
+import { Button,HoldButton, hintBar, windowFrame, MenuList,toast, type MenuItem, type Widget } from '../kit';
 import { Screen } from '../screen';
 import { castSpirit } from '../spirit';
 import { H, W, Shape, type Node } from '../stage';
@@ -50,9 +55,9 @@ type Mode =
   | {kind:'mapConfirm';unit:UnitView;at:Cell;weaponId:string;aimId:string}
   | {kind:'spiritTarget';unit:UnitView;at:Cell;spiritId:string;targets:string[]}
   | { kind: 'spirit'; unit: UnitView; at: Cell }
-  | { kind: 'target'; unit: UnitView; at: Cell; targets: string[] }
+  | { kind: 'target'; unit: UnitView; at: Cell; targets: string[];weaponId?:string }
   | { kind: 'weapon'; unit: UnitView; at: Cell; targetId: string }
-  | { kind: 'forecast'; unit: UnitView; at: Cell; targetId: string };
+  | { kind: 'forecast'; unit: UnitView; at: Cell; targetId: string;weaponId?:string;fromTarget?:boolean };
 
 const HINTS: Record<Mode['kind'], string> = {
   inspectMenu:'능력 보기 · 빈 곳을 누르면 닫기',
@@ -71,7 +76,8 @@ const HINTS: Record<Mode['kind'], string> = {
   forecast: 'Enter 전투 개시 · Esc 뒤로',
 };
 
-export interface MapOptions {
+export interface MapOptions {tutorial?:()=>boolean;onTutorialDone?:()=>void;
+
   speed?:()=>number;
   hints?:()=>MapHint[];hintOptions?:HintOptions;
   animation?:()=> 'on'|'off'|'allies';setAnimation?:(value:'on'|'off')=>void;
@@ -79,7 +85,7 @@ export interface MapOptions {
   opening?:boolean;
   story?: (scene:string,screen:MapScreen,board:Board)=>Step;
   storyInput?: (event:import('../input').InputEvent)=>boolean;
-  battle?: (exchange:import('../battle/types').Exchange) => { animation: 'on' | 'off' | 'allies'; speed: number; shake: number; music?:string;opening?:{slot:string;seconds?:number} };
+  battle?: (exchange:import('../battle/types').Exchange) => { animation: 'on' | 'off' | 'allies'; speed: number; shake: number;enemyBattle?:'full'|'brief';setSpeed?:(speed:number)=>void; music?:string;opening?:{slot:string;seconds?:number} };
   eventMusic?:(event:MapEvent)=>string|undefined;
   phaseMusic?: (team:Team)=>string|undefined;
   menu?: { label: string; run: () => void }[];
@@ -90,11 +96,11 @@ export interface MapOptions {
 }
 
 export class MapScreen extends Screen {
-  private board!: Board;
+  private board!: Board;private tutorial?:FirstGuide;private tutorialHide?:Button;private tutorialMark?:Shape;private tutorialStarted=false;private emptyHold?:{time:number;cell:Cell};
   private brief?:BriefControl;
   private guidance?:{next:boolean;skip:boolean;down?:number;current?:MapHint};
   private markers?:HintShape<object>;
-  private mapButton!:Button;
+  private objectiveButton?:Button;private mapButton!:Button;private fastButton?:HoldButton;
   private clock=0;
   private lastEmpty?:{cell:Cell;time:number};
   private outsidePopup?:{x:number;y:number};
@@ -114,8 +120,10 @@ export class MapScreen extends Screen {
   prepare():Promise<void>|void {return preloadImages(this.model.images?.()??[this.model.terrain,...this.model.units().flatMap(u=>[u.icon,...portraitImages(u.portrait)])]);}
   constructor(private readonly model: MapModel, private readonly options: MapOptions = {}) { super(); }
 
-  update(dt:number):void {this.clock+=dt;super.update(dt);if(this.guidance?.down!==undefined&&this.clock-this.guidance.down>=.55)this.guidance.skip=true;}
+  update(dt:number):void {this.clock+=dt;super.update(dt);if(this.floating.length)for(const n of this.stage.ui.nodes)if((n as Shape<any>).state?.phaseBanner)n.alpha=Math.max(0,n.alpha-dt/.15);if(this.objectiveButton)this.objectiveButton.visible=!!this.options.objectives&&!this.floating.length&&(!this.tutorial||this.tutorial.finished||this.mode.kind==='busy');if(this.fastButton){this.fastButton.visible=this.phase?.state.team!=='ally'&&this.mode.kind==='busy';if(this.fastButton.visible)this.land.visible=false;}if(this.emptyHold&&this.clock-this.emptyHold.time>.5){const cell=this.emptyHold.cell;this.emptyHold=undefined;this.lastEmpty=undefined;this.mapMenu(cell);}if(this.tutorialHide){const visible=this.guideVisible();this.tutorialHide.visible=visible;this.tutorialHide.y=['weapon','target','forecast'].includes(this.mode.kind)?0:102;if(this.tutorialMark)this.tutorialMark.visible=visible;}if(this.guidance?.down!==undefined&&this.clock-this.guidance.down>=.55)this.guidance.skip=true;}
   input(event:import('../input').InputEvent):void {
+    if(event.kind==='action'&&event.wheel&&!this.floating.some(w=>w instanceof MenuList)){if(this.mode.kind!=='busy')this.board.pan(event.shift?(event.action==='down'?80:-80):0,event.shift?0:event.action==='down'?80:-80);return;}
+    if(event.kind==='pointer'&&touchInput()&&this.mode.kind==='idle'){const cell=this.board.cellAt(event.x,event.y);if(event.phase==='down'&&cell&&!this.board.unitAt(cell))this.emptyHold={time:this.clock,cell};if(event.phase==='move'&&this.emptyHold&&cell&&!sameCell(this.emptyHold.cell,cell))this.emptyHold=undefined;if(event.phase==='up')this.emptyHold=undefined;}
     if(this.speechControl){if(event.kind==='action'||event.phase==='down')this.speechControl.fast=true;return;}
     if(this.guidance){const g=this.guidance;if(event.kind==='pointer'){if(event.phase==='down')g.down=this.clock;if(event.phase==='up'){if(g.down!==undefined&&this.clock-g.down>=.55)g.skip=true;else g.next=true;g.down=undefined;}}else if(event.action==='cancel')g.skip=true;else if(event.action==='confirm')g.next=true;this.ui.input(event);return;}
     if(this.options.storyInput?.(event))return;
@@ -123,7 +131,7 @@ export class MapScreen extends Screen {
     if(event.kind==='action'&&event.action==='menu'){if(this.mode.kind==='idle')this.mapMenu(this.board.cursor);return;}
     if(event.kind==='pointer'){
       const list=this.floating.find((w):w is MenuList=>w instanceof MenuList);
-      const back=this.ui.navigationContains(event.x,event.y);
+      const back=this.ui.navigationContains(event.x,event.y)||this.floating.some(w=>w instanceof Button&&w.visible&&w.contains(event.x,event.y));
       const menuButton=this.mapButton?.visible&&this.mapButton.contains(event.x,event.y);
       if(list&&['command','weapon','spirit','menu','inspectMenu','ability','mapWeapons','mapAim'].includes(this.mode.kind)&&!back&&!menuButton&&!list.contains(event.x,event.y)){
         if(event.phase==='down')this.outsidePopup={x:event.x,y:event.y};
@@ -134,6 +142,21 @@ export class MapScreen extends Screen {
     if(event.kind==='pointer'&&event.phase==='up')this.outsidePopup=undefined;
     super.input(event);
   }
+  private guideVisible():boolean{const g=this.tutorial,k=this.mode.kind;return this.app.top===this&&!!g&&!g.finished&&this.model.turn().team==='ally'&&!this.guidance&&((k==='idle'&&(g.step===0||g.step===4))||(k==='move'&&g.step===1)||(['weapon','target'].includes(k)&&g.step===2)||(k==='forecast'&&g.step===3));}
+  private startTutorial(force=false):void{
+    if(this.tutorialStarted||!force&&!this.options.tutorial?.()||this.model.turn().team!=='ally')return;
+    this.tutorialStarted=true;this.tutorial=new FirstGuide();const guide=this.tutorial;
+    this.tutorialMark=this.stage.ui.add(new Shape({},ctx=>{
+      if(!this.guideVisible())return;
+      const selected='unit'in this.mode?this.mode.unit:this.model.units().find(u=>u.team==='ally'),list=this.floating.find(w=>w instanceof MenuList)as MenuList|undefined;
+      const p=guide.step===4?{x:W-96,y:96}:guide.step===3?{x:W-230,y:490}:guide.step===2&&list?list.selectionPoint():this.board.onScreen(selected?.cell??this.board.cursor);
+      const x=24,y=guide.step===3?390:78,h=guide.step===3?54:64;
+      panel(ctx,x,y,700,h,COLOR.gold);ctx.font=`900 25px ${FONT.body}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(guide.text(touchInput()),x+22,y+h/2,660);
+      if(guide.step!==3){ctx.strokeStyle=COLOR.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+200,y+h);ctx.lineTo(p.x,Math.max(146,Math.min(H-80,p.y)));ctx.stroke();}
+    }));this.tutorialMark.z=94;
+    this.tutorialHide=this.ui.add(Object.assign(new Button('안내 끄기',()=>{guide.finished=true;this.options.onTutorialDone?.();},{w:180,h:82}),{x:W-212,y:102,z:96,canFocus:false}));
+  }
+  replayTutorial():void{this.tutorialMark?.remove();if(this.tutorialHide)this.ui.remove(this.tutorialHide);this.tutorialStarted=false;this.startTutorial(true);}
   private pointerPick(cell:Cell,confirmed:boolean):void {
     const unit=this.board.unitAt(cell);
     if(this.mode.kind==='idle'){
@@ -141,7 +164,7 @@ export class MapScreen extends Screen {
       const last=this.lastEmpty;if(last&&sameCell(last.cell,cell)&&this.clock-last.time<=.45){this.lastEmpty=undefined;this.mapMenu(cell);}else this.lastEmpty={cell:{...cell},time:this.clock};return;
     }
     if(this.mode.kind==='move'&&!unit&&!this.mode.reach.some(c=>sameCell(c,cell))){this.back();return;}
-    if(confirmed)this.pick(cell);
+    if(confirmed||touchInput()||this.mode.kind==='move'||this.mode.kind==='target')this.pick(cell);
   }
   /** 화면 위 연극. 메뉴 입력은 연극이 끝날 때까지 멈춘다. */
   present(events:MapEvent[]):void { if(!this.board){this.pendingPresent.push(events);return;}this.run(this.presentSteps(events)); }
@@ -153,31 +176,35 @@ export class MapScreen extends Screen {
     board.onHover = cell => this.hover(cell);
     board.onPick = cell => this.pick(cell);
     board.onTap = (cell,confirmed) => this.pointerPick(cell,confirmed);
-    this.markers=stage.ui.add(new HintShape({},ctx=>{if(this.mode.kind==='busy'&&!this.guidance)return;for(const h of this.options.hints?.()??[])if(h.marker!==false&&h.kind!=='victory'&&this.options.hintOptions?.persistent!==false){const p=board.onScreen(h.cell);if(p.x<0||p.x>W||p.y<80||p.y>H-70)continue;ctx.globalAlpha=.65+.25*Math.sin(this.clock*3);ctx.fillStyle=h.kind==='danger'?COLOR.enemy:COLOR.gold;ctx.beginPath();ctx.arc(p.x,p.y-26,14,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.font=`900 22px ${FONT.body}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#08122a';ctx.fillText('!',p.x,p.y-25);}}));this.markers.z=35;
+    this.markers=stage.ui.add(new HintShape({},ctx=>{if(this.mode.kind==='busy'&&!this.guidance)return;for(const h of this.options.hints?.()??[])if(h.marker!==false&&h.kind!=='victory'&&this.options.hintOptions?.persistent!==false){const p=board.onScreen(h.cell);if(p.x<0||p.x>W||p.y<150||p.y>H-70)continue;ctx.globalAlpha=.65+.25*Math.sin(this.clock*3);ctx.fillStyle=h.kind==='danger'?COLOR.enemy:COLOR.gold;ctx.beginPath();ctx.arc(p.x,p.y-26,14,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.font=`900 22px ${FONT.body}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#08122a';ctx.fillText('!',p.x,p.y-25);}}));this.markers.z=35;
     board.sync(model.units());board.blockedCells=model.blockedCells?.()??[];
     this.card = stage.ui.add(unitCard());
     this.land = stage.ui.add(terrainChip());
     this.phase = stage.ui.add(phaseChip(turn.team, turn.number));
     this.hint = stage.ui.add(hintBar(HINTS.idle));
-    this.mapButton=ui.add(Object.assign(new Button('메뉴',()=>{if(this.mode.kind==='idle')this.mapMenu(board.cursor);else if(this.mode.kind==='menu')this.back();},{w:128,h:64,kind:'main'}),{x:W-232,y:8,z:90,canFocus:false}));
+    this.mapButton=ui.add(Object.assign(new Button('메뉴',()=>{if(this.mode.kind==='idle')this.mapMenu(board.cursor);else if(this.mode.kind==='menu')this.back();},{w:144,h:82,kind:'main'}),{x:W-168,y:8,z:90,canFocus:false}));
+    this.fastButton=ui.add(Object.assign(new HoldButton('빨리 ▶▶',held=>{this.app.fastHeld=held;},{w:180,h:82}),{x:W-204,y:H-140,z:90,canFocus:false,visible:false}));
     this.navigation();
     const first = model.units().find(u => u.team === 'ally') ?? model.units()[0];
     if (first) { board.cursor = first.cell; board.snap(first.cell); }
     this.hover(board.cursor);
-    if(this.options.opening)this.set({kind:'busy'});else this.run(bigBanner(this.show, '아군 페이즈', COLOR.ally));
+    if(this.options.opening)this.set({kind:'busy'});else this.run(bigBanner(this.show,turn.team==='ally'?'아군 페이즈':turn.team==='enemy'?'적 페이즈':'제3세력 페이즈',turn.team==='ally'?COLOR.ally:COLOR.enemy));
+    const objective=this.ui.add(Object.assign(new Button(this.options.objectives?.win[0]??'',()=>{const screen=this;this.run((function*():Step{yield*screen.objectives('');})());},{w:620,h:82}),{x:16,y:78,z:45,canFocus:false}));this.objectiveButton=objective;objective.visible=!!this.options.objectives;
+    this.startTutorial();
     for(const events of this.pendingPresent)this.present(events);
     this.pendingPresent=[];
   }
-  resume(): void { this.returned = true; }
+  private menuSize=resolveUiSize();
+  resume(): void { this.returned = true;const size=resolveUiSize();if(this.menuSize!==size){this.menuSize=size;if(this.mode.kind==='menu')this.mapMenu(this.board.cursor);}if(this.tutorial?.finished&&this.options.tutorial?.()){this.tutorialMark?.remove();if(this.tutorialHide)this.ui.remove(this.tutorialHide);this.tutorialStarted=false;this.startTutorial();} }
 
   // ── 단계 바꾸기 ──
-  private set(mode: Mode): void { this.mode = mode; this.hint.state.text = HINTS[mode.kind];this.mapButton.enabled=true;this.mapButton.visible=mode.kind==='idle'||mode.kind==='menu';this.navigation(); }
+  private set(mode: Mode): void { this.mode = mode;if(mode.kind==='move')this.tutorial?.event('select');if(mode.kind==='forecast')this.tutorial?.event('forecast'); this.hint.state.text = HINTS[mode.kind];this.mapButton.enabled=true;this.mapButton.visible=mode.kind==='idle';this.navigation(); }
   /** Screen states declare their local return control; busy/mandatory response have no Esc. */
   private navigation():void {
     const kind=this.mode.kind;
     if(['busy','response','responseForecast'].includes(kind)){this.ui.setNavigation({kind:'none'});return;}
     const onBack=()=>this.back();
-    if(kind==='idle'){this.ui.setNavigation(this.options.onExit||this.board?.attackCells.length?{kind:'escape',onBack}:{kind:'none'});return;}
+    if(kind==='idle'){this.ui.setNavigation(this.options.onExit||this.board?.attackCells.length?{kind:'escape',esc:false,onBack}:{kind:'none'});return;}
     if(kind==='forecast'){this.ui.setNavigation({kind:'close',bounds:{x:40,y:80,w:1200,h:510},cancelInContent:true,onBack});return;}
     if(this.land)this.land.visible=false;
     this.ui.setNavigation({kind:'back',onBack});
@@ -190,20 +217,29 @@ export class MapScreen extends Screen {
     this.ui.focusOn(this.board, true);
   }
   /** 칸 옆에 메뉴를 띄운다. 화면 밖으로 나가지 않게 자리를 잡는다. */
-  private menu(items: MenuItem[], near: Cell, choose: (index: number) => void, width = 250,onMove?:(index:number)=>void,previewFirst=false,title?:string): MenuList {
+  private menu(items: MenuItem[], near: Cell, choose: (index: number) => void, width = 320,onMove?:(index:number)=>void,previewFirst=false,title?:string): MenuList {
+    if(largeUi()&&(this.mode.kind==='command'||this.mode.kind==='spirit')){
+      const command=this.mode.kind==='command',cols=command?5:2,rows=command?2:3,w=command?1200:640;
+      const list=new GridMenu(items,i=>choose(i),{w,columns:cols,rows,height:command?84:100,onMove});
+      const x=command?40:20,y=720-24-list.h-104;
+      const frame=this.stage.ui.add(Object.assign(windowFrame(title??(command?'기체 명령':'정신기'),w,list.h+104,{inside:true}),{x,y,z:61}));this.floating.push(frame);
+      Object.assign(list,{x,y:y+104,z:62});this.ui.setNavigation({kind:'close',bounds:{x,y,w,h:list.h+104},onBack:()=>this.back()});this.card.visible=this.land.visible=false;this.floating.push(this.ui.add(list));this.ui.focusOn(list,true);return list;
+    }
     const wrapped=items.some(i=>i.wrapLabel),detailed=items.some(i=>i.description);
-    const close=this.mode.kind==='spirit'||this.mode.kind==='inspectMenu'||this.mode.kind==='menu';
+    const close=!['weapon','mapWeapons','ability','mapAim'].includes(this.mode.kind);
     const header=close?104:0,footer=close?0:104;
-    const list=new MenuList(items,choose,{w:width,rows:Math.min(items.length,detailed?4:wrapped?5:7),rowHeight:detailed?100:wrapped?68:50,onMove,previewFirst}),spot=this.board.onScreen(near);
+    const mobile=largeUi(),rowHeight=detailed?100:mobile?100:wrapped?68:56,pagerHeight=mobile?68:40;let rows=Math.min(items.length,detailed?3:mobile?4:wrapped?5:7);if(items.length>rows)rows=Math.min(rows,Math.max(1,Math.floor((H-144-header-footer-20-2*pagerHeight)/rowHeight)));
+    const spot=this.board.onScreen(near),maxHeight=spot.y>H/2?Math.max(rowHeight+20+pagerHeight*2,spot.y-156-header-footer):H-192-header-footer;
+    const list=new MenuList(items,choose,{w:width,rows,rowHeight,pagerHeight,onMove,previewFirst,maxHeight});
     const height=list.h+header+footer;
     list.x=Math.max(20,Math.min(W-width-20,spot.x+60+width>W-20?spot.x-60-width:spot.x+60));
     const y=Math.max(96,Math.min(H-48-height,spot.y>H/2?spot.y-60-height:spot.y-50));
     list.y=y+header;
-    const heading=title??({menu:'맵 메뉴',spirit:'정신기',inspectMenu:'유닛 메뉴'} as Record<string,string>)[this.mode.kind]??'';
+    const heading=title??({menu:'맵 메뉴',command:'기체 명령',spirit:'정신기',inspectMenu:'유닛 메뉴'} as Record<string,string>)[this.mode.kind]??'';
     const frame=this.stage.ui.add(Object.assign(windowFrame(heading,width,height,{inside:close}),{x:list.x,y,z:61}));this.floating.push(frame);
-    this.ui.setNavigation({kind:close?'close':'back',bounds:{x:list.x,y,w:width,h:height},onBack:()=>this.back()});
+    this.ui.setNavigation({kind:close?'close':'back',bounds:this.mode.kind==='weapon'?{x:0,y:0,w:1280,h:664}:{x:list.x,y,w:width,h:height},onBack:()=>this.back()});
     this.card.visible=this.land.visible=false;
-    list.index=this.mode.kind==='command'&&this.mode.unit.acted?Math.max(0,items.findIndex(i=>!i.disabled)):0;
+    list.index=Math.max(0,items.findIndex(i=>!i.disabled));
     list.z = 62;
     this.floating.push(this.ui.add(list));
     this.ui.focusOn(list, true);return list;
@@ -244,7 +280,7 @@ export class MapScreen extends Screen {
     } else if(mode.kind==='mapAim'){const aim=mode.aims.find(a=>a.cell&&sameCell(a.cell,cell));if(aim)this.mapConfirm(mode.unit,mode.at,mode.weaponId,aim.id);else this.deny();
     } else if(mode.kind==='spiritTarget'){if(unit&&mode.targets.includes(unit.id))this.cast(mode.unit,mode.at,mode.spiritId,unit.id);else this.deny();
     } else if (mode.kind === 'target') {
-      if (unit && mode.targets.includes(unit.id)) { this.app.sound.play('confirm'); this.weapons(mode.unit, mode.at, unit.id); } else this.deny();
+      if (unit && mode.targets.includes(unit.id)) { this.app.sound.play('confirm'); if(mode.weaponId)this.forecast(mode.unit,mode.at,unit.id,mode.weaponId,true);else this.weapons(mode.unit, mode.at, unit.id); } else this.deny();
     }
   }
 
@@ -256,11 +292,11 @@ export class MapScreen extends Screen {
     this.app.sound.play('confirm');
     board.clearMarks();
     this.set({ kind: 'busy' });
-    this.run((function* (): Step { yield* board.moveAlong(unit.id, path); screen.commands(unit, at); })());
+    this.run((function* (): Step { yield* board.moveAlong(unit.id,path,()=>screen.movementRate());screen.tutorial?.event('move');if(model.targets(unit.id,at).length)screen.weapons(unit,at);else screen.commands(unit,at); })());
   }
 
   private commands(unit: UnitView, at: Cell): void {
-    const list = this.model.commands(unit.id, at);
+    const list=this.model.commands(unit.id,at).map(c=>({...c,...(c.disabled?{badge:unit.acted?'행동 완료':c.id==='attack'?'사거리 안 적 없음':'지금 사용 불가'}:{})}));
     this.clear(); this.board.clearMarks();
     this.set({ kind: 'command', unit, at });
     this.menu(list, at, index => {
@@ -287,71 +323,76 @@ export class MapScreen extends Screen {
     this.set({ kind: 'spirit', unit, at });
     const tip=this.stage.ui.add(new Tooltip());
     const show=(i:number)=>{tip.show(spiritTip(list[i]),menu);};
-    const menu=this.menu(list.map(s => ({ label: s.name, value: String(s.cost), disabled: !s.usable })), at, index => {
+    const menu=this.menu(list.map(s=>({label:s.name,value:`소모 ${s.cost}`,disabled:!s.usable,badge:s.usable?undefined:s.reason??'지금 사용 불가'})), at, index => {
       const spirit=list[index];if(spirit.targeted)this.spiritTarget(unit,at,spirit.id);else this.cast(unit,at,spirit.id);
-    },300,show,true,`정신기 · ${list[0]?.pilot??unit.pilot}`);this.floating.push(tip);show(menu.index);
+    },520,show,true,`정신기 · ${list[0]?.pilot??unit.pilot} · 남은 ${list[0]?.sp??0}/${list[0]?.spMax??0}`);this.floating.push(tip);show(menu.index);
   }
 
   private ability(unit:UnitView,at:Cell,ability:'transform'|'combine'):void{const list=ability==='transform'?this.model.transformations?.(unit.id,at)??[]:this.model.combinations?.(unit.id,at)??[];this.clear();this.set({kind:'ability',unit,at,ability});this.menu(list.map(a=>({label:a.label})),at,i=>this.app.push(new ConfirmScreen(`${list[i].label}${ability==='transform'?' 형태로 변형':'로 합체'}할까요?`,()=>this.commit(ability==='transform'?this.model.transform!(unit.id,at,list[i].id):this.model.combine!(unit.id,at,list[i].id))),'none'),470);}
   private persuadeTarget(unit:UnitView,at:Cell):void{const targets=this.model.persuadeTargets?.(unit.id,at)??[];this.clear();this.board.clearMarks();this.board.attackCells=this.model.units().filter(u=>targets.includes(u.id)).map(u=>u.cell);this.set({kind:'persuadeTarget',unit,at,targets});const first=this.model.units().find(u=>u.id===targets[0]);if(first)this.board.moveCursor(first.cell,true);}
-  private mapWeapons(unit:UnitView,at:Cell):void{const list=this.model.mapWeapons?.(unit.id,at)??[];this.clear();this.board.clearMarks();this.set({kind:'mapWeapons',unit,at});this.menu(list.map(w=>({label:w.name,labelSize:22,singleDescription:true,badge:w.reason,description:`위력 ${w.power} · 사거리 ${w.range} · ${w.resources??`${term('en')} ${w.cost}`}`,disabled:!w.usable})),at,i=>this.mapAim(unit,at,list[i].id),510);}
+  private mapWeapons(unit:UnitView,at:Cell):void{const list=this.model.mapWeapons?.(unit.id,at)??[];this.clear();this.board.clearMarks();this.set({kind:'mapWeapons',unit,at});this.menu(list.map(w=>({label:w.name,labelSize:22,singleDescription:true,badge:w.reason,description:`위력 ${w.power} · 사거리 ${w.range} · ${w.resources??`${term('en')} ${w.cost}`}`,disabled:!w.usable})),at,i=>this.mapAim(unit,at,list[i].id),largeUi()?1100:510);}
   private mapAim(unit:UnitView,at:Cell,weaponId:string):void{const aims=this.model.mapAims?.(unit.id,at,weaponId)??[];this.clear();this.board.clearMarks();this.set({kind:'mapAim',unit,at,weaponId,aims});const mark=(i:number)=>{this.board.attackCells=this.model.mapPreview!(unit.id,at,weaponId,aims[i].id).cells;};if(!aims.length)return;if(aims[0].cell){this.board.moveCells=aims.flatMap(a=>a.cell?[a.cell]:[]);this.board.moveCursor(aims[0].cell,true);mark(0);}else {this.menu(aims.map(a=>({label:a.label})),at,i=>this.mapConfirm(unit,at,weaponId,aims[i].id),300,mark);mark(0);}}
   private mapConfirm(unit:UnitView,at:Cell,weaponId:string,aimId:string):void{const p=this.model.mapPreview!(unit.id,at,weaponId,aimId);this.clear();this.set({kind:'mapConfirm',unit,at,weaponId,aimId});this.board.attackCells=p.cells;this.card.visible=this.land.visible=false;this.floating.push(this.stage.ui.add(Object.assign(windowFrame('맵 병기 확인',800,400),{x:240,y:145,z:60})));const lines=p.targets.map(t=>({label:this.model.units().find(u=>u.id===t.unitId)?.name??'대상',value:`${t.friendly?'아군 피해 · ':''}${t.hit}% · ${t.damage}`}));const list=this.ui.add(Object.assign(new MenuList(lines,()=>undefined,{w:730,rows:3,rowHeight:55}),{x:275,y:205,z:62}));const go=this.ui.add(Object.assign(new Button('공격 확정',()=>{const attack=()=>this.commit(this.model.mapAttack!(unit.id,at,weaponId,aimId));if(p.friendlyFire)this.app.push(new ConfirmScreen('범위 안 아군도 피해를 받습니다. 공격할까요?',attack),'none');else attack();},{kind:'main',w:360}),{x:460,y:560,z:62}));this.floating.push(list,go);this.ui.focusOn(go,true);}
-  private deviceTarget(unit:UnitView,at:Cell,deviceId:string):void{const targets=this.model.deviceTargets?.(unit.id,at,deviceId)??[],units=this.model.units().filter(u=>targets.includes(u.id));this.clear();this.set({kind:'spirit',unit,at});this.menu(units.map(u=>({label:u.name,value:`HP ${u.hp}/${u.hpMax} · ${term('en')} ${u.en}/${u.enMax}`})),at,i=>this.app.push(new ConfirmScreen(`${units[i].name} 지원을 실행할까요?`,()=>this.commit(this.model.device!(unit.id,at,deviceId,units[i].id))),'none'),570);}
+  private deviceTarget(unit:UnitView,at:Cell,deviceId:string):void{const targets=this.model.deviceTargets?.(unit.id,at,deviceId)??[],units=this.model.units().filter(u=>targets.includes(u.id));this.clear();this.set({kind:'spirit',unit,at});this.menu(units.map(u=>({label:u.name,description:`HP ${u.hp}/${u.hpMax} · ${term('en')} ${u.en}/${u.enMax}`,singleDescription:true})),at,i=>this.app.push(new ConfirmScreen(`${units[i].name} 지원을 실행할까요?`,()=>this.commit(this.model.device!(unit.id,at,deviceId,units[i].id))),'none'),800,undefined,false,deviceId.includes('repair')?'수리 대상':'보급 대상');}
   private spiritTarget(unit:UnitView,at:Cell,spiritId:string):void{const targets=this.model.spiritTargets?.(unit.id,spiritId)??[];this.clear();this.board.clearMarks();const views=this.model.units().filter(u=>targets.includes(u.id));this.board.moveCells=views.filter(u=>u.team==='ally').map(u=>u.cell);this.board.attackCells=views.filter(u=>u.team!=='ally').map(u=>u.cell);this.set({kind:'spiritTarget',unit,at,spiritId,targets});if(views[0])this.board.moveCursor(views[0].cell,true);}
   private cast(unit:UnitView,at:Cell,spiritId:string,targetId?:string):void{const events=this.model.cast(unit.id,spiritId,targetId),screen=this;this.clear();this.board.clearMarks();this.set({kind:'busy'});this.run((function*():Step{yield*screen.play(events);screen.board.sync(screen.model.units());screen.board.place(unit.id,at);screen.commands({...unit,...screen.model.units().find(u=>u.id===unit.id),cell:unit.cell},at);})());}
-  private target(unit: UnitView, at: Cell): void {
-    const { model, board } = this, targets = model.targets(unit.id, at);
+  private target(unit: UnitView, at: Cell,weaponId?:string): void {
+    const { model, board } = this, targets=model.targets(unit.id,at).filter(id=>!weaponId||model.weapons(unit.id,at,id).some(w=>w.id===weaponId&&w.usable));
     this.clear();
     board.clearMarks(); board.attackCells = model.range(unit.id, at);
-    this.set({ kind: 'target', unit, at, targets });
+    this.set({kind:'target',unit,at,targets,weaponId});
     // 커서를 가장 가까운 적에게 옮겨 준다.
     const first = model.units().find(u => u.id === targets[0]);
     if (first) board.moveCursor(first.cell, true);
     this.hover(board.cursor);
   }
 
-  private weapons(unit: UnitView, at: Cell, targetId: string): void {
-    const list = this.model.weapons(unit.id, at, targetId);
+  private weapons(unit:UnitView,at:Cell,targetId?:string):void {
+    const targets=this.model.targets(unit.id,at),first=targetId??targets[0];if(!first){this.commands(unit,at);return;}const initial=this.model.weapons(unit.id,at,first),list=targetId?initial:initial.map(w=>targets.flatMap(id=>this.model.weapons(unit.id,at,id)).find(v=>v.id===w.id&&v.usable)??w);
     this.clear();
-    this.set({ kind: 'weapon', unit, at, targetId });
+    this.set({kind:'weapon',unit,at,targetId:targetId??''});
     const items = list.map(w => ({ label: w.name,labelSize:22,description:[`위력 ${w.power} · 사거리 ${w.range}`,w.resources??`${term('en')} ${w.cost}`].filter(Boolean).join(' · '),singleDescription:true,badge:w.reason,disabled: !w.usable }));
-    this.menu(items, at, index => this.forecast(unit, at, targetId, list[index].id), 760);
+    this.menu(items,at,index=>targetId?this.forecast(unit,at,targetId,list[index].id):this.target(unit,at,list[index].id),largeUi()?1100:760);
   }
 
-  private animationToggle():void{if(!this.options.animation||!this.options.setAnimation)return;const label=()=>`전투 연출 · ${this.options.animation!()==='off'?'꺼짐':this.options.animation!()==='allies'?'아군만':'켜짐'}`;const toggle=this.ui.add(Object.assign(new Button(label(),()=>{this.options.setAnimation!(this.options.animation!()==='off'?'on':'off');toggle.label=label();},{w:260,h:64}),{x:W-520,y:30,z:65,canFocus:false}));this.floating.push(toggle);}
-  private forecast(unit: UnitView, at: Cell, targetId: string, weaponId: string): void {
+  private animationToggle():void{if(!this.options.animation||!this.options.setAnimation)return;const label=()=>`전투 연출 · ${this.options.animation!()==='off'?'꺼짐':this.options.animation!()==='allies'?'아군만':'켜짐'}`;const toggle=this.ui.add(Object.assign(new Button(label(),()=>{this.options.setAnimation!(this.options.animation!()==='off'?'on':'off');toggle.label=label();},{w:320,h:82}),{x:W/2-160,y:0,z:65,canFocus:false}));this.floating.push(toggle);}
+  private forecast(unit: UnitView, at: Cell, targetId: string, weaponId: string,fromTarget=false): void {
     const { model, stage, ui } = this, f = model.forecast(unit.id, at, weaponId, targetId), target = model.units().find(u => u.id === targetId)!;
     const side = (view: UnitView, data: typeof f.attacker, role: string): ForecastInfo => ({ unit: view, role, weapon: data.weapon, hit: data.hit, damage: data.damage, critical: data.critical,resources:data.resources });
     const mine = side(unit, f.attacker, '공격'), theirs = side(target, f.defender, f.defender.weapon ? '반격' : '반격 불가');
     this.clear();
-    this.set({ kind: 'forecast', unit, at, targetId });
+    this.set({ kind: 'forecast', unit, at, targetId,weaponId,fromTarget });
     this.card.visible = this.land.visible = false;   // 예측 창이 뜨는 동안 아래 정보는 가린다
     // 전투 장면과 좌우를 맞춘다: 적이 왼쪽, 아군이 오른쪽.
     const [left, right] = unit.team === 'ally' ? [theirs, mine] : [mine, theirs];
     this.floating.push(stage.ui.add(Object.assign(windowFrame('',1200,510),{x:40,y:80,z:59})),stage.ui.add(forecastPanel(left, right)));this.animationToggle();
-    const go = ui.add(Object.assign(new Button('전투 개시', () => this.commit(model.attack(unit.id, at, weaponId, targetId)), { kind: 'main', w: 240 }), { x: W / 2 - 380, y: 520, z: 62 }));
-    const change = ui.add(Object.assign(new Button('무기 변경', () => this.weapons(unit, at, targetId), { w: 240 }), { x: W / 2 - 120, y: 520, z: 62 }));
-    const cancel = ui.add(Object.assign(new Button('취소', () => this.back(), { w: 240 }), { x: W / 2 + 140, y: 520, z: 62 }));
+    const go = ui.add(Object.assign(new Button('전투 개시', () => this.commit(model.attack(unit.id, at, weaponId, targetId)), {kind:'main',w:largeUi()?360:300,h:88}),{x:largeUi()?W-420:W-380,y:largeUi()?508:448, z: 62 }));
+    const change = ui.add(Object.assign(new Button('무기 변경', () => this.weapons(unit, at, targetId), {w:260,h:88}),{x:W/2-130,y:448, z: 62 }));
+    const cancel = ui.add(Object.assign(new Button('취소', () => this.back(), {w:240,h:88}),{x:80,y:448, z: 62 }));
     this.floating.push(go, change, cancel);
     ui.focusOn(go, true);
   }
 
   private inspect(id:string):void {const data=this.model.details?.(id);if(data)this.app.push(new UnitDetailsScreen(data,()=>this.app.pop('none')),'none');else toast(this,'능력 정보가 없습니다');}
-  private roster():void {this.clear();this.set({kind:'idle'});this.app.push(new RosterScreen(this.model,()=>this.app.pop('none')),'none');}
-  private mapMenu(cell: Cell): void {
+  private roster():void {this.clear();this.set({kind:'idle'});this.app.push(new RosterScreen(this.model,()=>this.app.pop('none'),id=>{this.app.pop('none');const u=this.model.units().find(u=>u.id===id);if(u){this.board.moveCursor(u.cell,true);this.run(this.board.look(u.cell));}}),'none');}
+  private mapMenu(_cell: Cell): void {
     this.clear();this.board.clearMarks();this.lastEmpty=undefined;
-    const waiting = this.model.units().some(u => u.team === 'ally' && !u.acted), end = (): void => this.commit(this.model.endTurn());
+    const end=():void=>{this.tutorial?.event('end-turn');if(this.tutorial?.finished)this.options.onTutorialDone?.();this.commit(this.model.endTurn());};
     const items: { item: MenuItem; run: () => void }[] = [
       ...(this.options.objectives?[{item:{label:'작전 목표'},run:()=>{const screen=this;this.run((function*():Step{screen.clear();screen.set({kind:'idle'});yield*screen.objectives('누르면 닫기');})());}}]:[]),
       {item:{label:'부대 현황'},run:()=>this.roster()},
-      { item: { label: '턴 종료',disabled:this.model.turn().team!=='ally' }, run: () => { if (waiting) this.app.push(new ConfirmScreen('아직 움직이지 않은 기체가 있습니다.\n턴을 끝낼까요?', end), 'none'); else end(); } },
+      { item: { label: '턴 종료',disabled:this.model.turn().team!=='ally' }, run: () => { if (true) this.app.push(new ConfirmScreen('아직 움직이지 않은 기체가 있습니다.\n턴을 끝낼까요?', end), 'none'); else end(); } },
       ...(this.options.menu ?? []).map(item => ({ item: { label: item.label }, run: item.run })),
       ...(this.options.onExit ? [{ item: { label: '나가기' }, run: this.options.onExit }] : []),
     ];
     this.app.sound.play('confirm', 0.5);
     this.set({ kind: 'menu' });
-    this.menu(items.map(i => i.item), cell, index => items[index].run());
+    const ordinary=items.filter(i=>i.item.label!=='턴 종료'),finish=items.find(i=>i.item.label==='턴 종료')!;
+    const w=largeUi()?450:360,header=104,list=largeUi()?new GridMenu(ordinary.map(i=>i.item),i=>ordinary[i].run(),{w,columns:1,rows:3}):new MenuList(ordinary.map(i=>i.item),i=>ordinary[i].run(),{w,rows:3,rowHeight:56,maxHeight:300}),height=header+list.h+132,x=W-w-24,y=H-24-height;
+    this.floating.push(this.stage.ui.add(Object.assign(windowFrame('맵 메뉴',w,height,{inside:true}),{x,y,z:61})));
+    Object.assign(list,{x,y:y+header,z:62});this.floating.push(this.ui.add(list));this.ui.focusOn(list,true);
+    const endButton=this.ui.add(Object.assign(new Button('턴 종료',finish.run,{w:w-32,h:84,kind:'back'}),{x:x+16,y:H-108,z:62}));endButton.enabled=!finish.item.disabled;this.floating.push(endButton);
+    this.ui.setNavigation({kind:'close',bounds:{x,y,w,h:height},onBack:()=>this.back()});this.card.visible=this.land.visible=false;
   }
 
   /** 취소: 한 단계 앞으로. */
@@ -378,14 +419,14 @@ export class MapScreen extends Screen {
       case 'mapAim':this.mapWeapons(mode.unit,mode.at);return;
       case 'mapConfirm':this.mapAim(mode.unit,mode.at,mode.weaponId);return;
       case 'spiritTarget':this.spirits(mode.unit,mode.at);return;
-      case 'spirit': case 'target': this.commands(mode.unit, mode.at); return;
-      case 'weapon': this.target(mode.unit, mode.at); return;
-      case 'forecast': this.weapons(mode.unit, mode.at, mode.targetId); return;
+      case 'spirit':this.commands(mode.unit,mode.at);return;case 'target':if(mode.weaponId)this.weapons(mode.unit,mode.at);else this.commands(mode.unit,mode.at);return;
+      case 'weapon':this.commands(mode.unit,mode.at);return;
+      case 'forecast':if(mode.fromTarget)this.target(mode.unit,mode.at,mode.weaponId);else this.weapons(mode.unit,mode.at,mode.targetId);return;
     }
   }
 
   // ── 일어난 일을 튼다 ──
-  private commit(events: MapEvent[]): void {
+  private commit(events:MapEvent[]):void {if(events.some(e=>e.type==='battle'))this.tutorial?.event('battle');
     this.clear(); this.board.clearMarks();
     const screen = this;
     this.run((function* (): Step { yield* screen.play(events); screen.settle(); })());
@@ -396,7 +437,7 @@ export class MapScreen extends Screen {
     this.board.sync(this.model.units());this.board.blockedCells=this.model.blockedCells?.()??[];
     Object.assign(this.phase.state, { team: turn.team, turn: turn.number });
     this.set({ kind: 'idle' });
-    this.hover(this.board.cursor);
+    this.hover(this.board.cursor);this.startTutorial();
   }
   /** 적의 공격을 받을 때: 예상 창을 바로 띄우고, 그 아래에 대응(반격 무기·방어·회피)을 고르는 줄과 확정 버튼을 둔다.
    *  대응을 누르면 고르기만 하고 예상 수치가 바뀐다. 확정은 '대응 확정' 버튼으로만 한다. */
@@ -408,17 +449,17 @@ export class MapScreen extends Screen {
     this.floating.push(this.stage.ui.add(forecastPanel(side(prompt.attacker,f.attacker,'공격'),side(prompt.defender,id.startsWith('counter:')?f.defender:{...f.defender,weapon:id==='defend'?'방어 태세 · 받는 피해를 줄입니다':id==='evade'?'회피 기동 · 맞을 확률을 낮춥니다':f.defender.weapon},id.startsWith('counter:')?'반격':choice.label))));
     this.animationToggle();
     // At most two rows stay between the forecast (ends at 482) and the hint (starts at 680).
-    const choices=prompt.choices.slice(page*8,page*8+8),perRow=Math.min(4,choices.length),gap=12,bw=Math.floor((W-120-gap*(perRow-1))/perRow),bh=48,top=490;
+    const choices=prompt.choices.slice(page*8,page*8+8),perRow=Math.min(4,choices.length),gap=16,bw=Math.floor((W-120-gap*(perRow-1))/perRow),bh=largeUi()?84:68,top=largeUi()?408:400;
     choices.forEach((c,i)=>{const row=Math.floor(i/perRow),col=i%perRow,inRow=Math.min(perRow,choices.length-row*perRow),left=(W-(inRow*bw+(inRow-1)*gap))/2;
-      const b=this.ui.add(Object.assign(new Button((c.id===id?'✔ ':'')+c.label,()=>{if(c.id!==id)this.responseForecast(prompt,c.id);},{w:bw,h:bh,wrapLabel:true,kind:c.id===id?'main':'plain'}),{x:left+col*(bw+gap),y:top+row*(bh+8),z:62}));this.floating.push(b);});
-    const rows=Math.ceil(choices.length/perRow),y=top+rows*(bh+8)+8;
+      const b=this.ui.add(Object.assign(new Button((c.id===id?'✔ ':'')+c.label,()=>{if(c.id!==id)this.responseForecast(prompt,c.id);},{w:bw,h:bh,wrapLabel:true,kind:c.id===id?'main':'plain'}),{x:left+col*(bw+gap),y:top+row*(bh+16),z:62}));this.floating.push(b);});
+    const rows=Math.ceil(choices.length/perRow),y=top+rows*(bh+16)+16;
     if(prompt.choices.length>8){
       const pages=Math.ceil(prompt.choices.length/8);
       for(const [label,delta,x] of [['◀ 이전',-1,70],['다음 ▶',1,W-290]] as const){
         const b=this.ui.add(Object.assign(new Button(label,()=>this.responseForecast(prompt,id,(page+delta+pages)%pages),{w:220,h:54}),{x,y,z:62}));this.floating.push(b);
       }
     }
-    const go=this.ui.add(Object.assign(new Button('대응 확정',()=>this.responseDone?.(id),{kind:'main',w:360,h:54}),{x:(W-360)/2,y,z:62}));this.floating.push(go);this.ui.focusOn(go,true);
+    const go=this.ui.add(Object.assign(new Button('대응 확정',()=>this.responseDone?.(id),{kind:'main',w:360,h:82}),{x:(W-360)/2,y,z:62}));this.floating.push(go);this.ui.focusOn(go,true);
   }
   private *chooseResponse():Step {const prompt=this.model.response?.();if(!prompt||!this.model.respond)return;let chosen:string|undefined;this.responseDone=id=>{chosen=id;};this.responseMenu(prompt);yield*until(()=>!!chosen);this.responseDone=undefined;this.clear();yield*this.play(this.model.respond(chosen!));if(this.model.turn().team!=='ally'&&this.model.continueTurn)yield*this.play(this.model.continueTurn());}
   private *objectives(hint?:string):Step {if(!this.options.objectives)return;this.returned=false;this.app.push(new ObjectivesScreen({...this.options.objectives,optional:hintOrder(this.options.hints?.()??[],{order:['optional','danger']})},()=>this.app.pop('none'),hint,h=>{this.app.pop('none');this.board.snap(h.cell);this.board.moveCursor(h.cell);}),'none');yield*until(()=>this.returned);}
@@ -430,6 +471,7 @@ export class MapScreen extends Screen {
     const mark=this.stage.ui.add(new HintShape({},ctx=>{const h=g.current;if(!h)return;const p=this.board.onScreen(h.cell);ctx.strokeStyle=h.kind==='danger'?COLOR.enemy:COLOR.gold;ctx.lineWidth=4;ctx.globalAlpha=.5+.5*Math.abs(Math.sin(this.clock*5));ctx.strokeRect(p.x-40,p.y-40,80,80);ctx.globalAlpha=1;const label=hintLabel(h);ctx.font=`900 23px ${FONT.body}`;const width=Math.min(600,ctx.measureText(label).width+40),x=Math.max(24,Math.min(W-width-24,p.x-width/2)),y=Math.max(80,Math.min(H-130,p.y-100));panel(ctx,x,y,width,48,COLOR.gold);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=COLOR.ink;ctx.fillText(label,x+width/2,y+24,width-24);}));mark.z=60;
     try{for(const h of hints){if(g.skip)break;g.current=h;g.next=false;yield*this.board.look(h.cell);yield*until(()=>g.next||g.skip);}}finally{mark.remove();this.ui.remove(skip);nodes.forEach((n,i)=>n.visible=visible[i]);this.guidance=undefined;yield*this.board.look(start);}
   }
+  private movementRate():number{return this.app.fastHeld?3:this.options.speed?.()??1;}
   private *play(events: MapEvent[]): Step {
     // 규칙 쪽의 상태는 이미 끝까지 진행돼 있다. 그래서 트는 동안에는 model.units()로 판을 맞추지 않고,
     // 사건이 말해 주는 만큼만 판을 바꾼다(다 튼 뒤 settle에서 한 번 맞춘다).
@@ -457,17 +499,17 @@ export class MapScreen extends Screen {
         case 'objectives':yield*this.objectives();break;
         case 'hints':yield*this.guide();break;
         case 'story': if(this.options.story){const nodes=[this.card,this.land,this.phase,this.hint],visible=nodes.map(n=>n.visible);nodes.forEach(n=>n.visible=false);try{yield*this.options.story(event.scene,this,board);}finally{nodes.forEach((n,i)=>n.visible=visible[i]);}if(this.app.top===this&&this.music){yield*waitForAudio(this.show,[this.music]);this.app.sound.music(this.music);}}break;
-        case 'move': yield* board.moveAlong(event.unitId, event.path,()=>this.options.speed?.()??1);this.hover(board.cursor);break;
+        case 'move': yield* board.moveAlong(event.unitId, event.path,()=>this.movementRate());this.hover(board.cursor);break;
         case 'look': yield* board.look(event.cell); break;
         case 'battle': {
-          const settings = this.options.battle?.(event.exchange) ?? { animation: 'on', speed: 1, shake: 1 };
+          const settings = this.options.battle?.(event.exchange) ?? {animation:'on',speed:1,shake:1,enemyBattle:'full'};
           const ally = event.exchange.fighters.find(f => f.id === event.exchange.strikes[0]?.attacker)?.side === 'ally';
-          const animate = (settings.animation === 'on' || settings.animation === 'allies' && ally)&&!(!ally&&settings.speed>1);
+          const animate=(settings.animation==='on'||settings.animation==='allies'&&ally)&&(ally||settings.enemyBattle!=='brief');
           this.stage.camera.shakeScale = settings.shake;
           let progress=battleProgress(event.exchange),skipped=!animate;
           if(animate){
             this.returned=false;
-            this.app.push(new BattleScreen(event.exchange,result=>{progress=result.progress;skipped=result.skipped;this.app.pop();},{...settings,deferRewards:true}));
+            this.app.push(new BattleScreen(event.exchange,result=>{progress=result.progress;skipped=result.skipped;this.app.pop();},{...settings,enemyPhase:!ally,deferRewards:false}));
             yield*until(()=>this.returned);
           }
           // Bring the map up to the already displayed result before resuming any unfinished steps.
@@ -488,6 +530,7 @@ export class MapScreen extends Screen {
         case 'defeat': if(!shownDefeats.has(event.unitId))yield* board.defeat(event.unitId);if(event.reward)toast(this,`${event.reward.name} · ${term('trainingShort')} +${event.reward.amount}`); break;
         case 'spawn': {const visible=[this.card.visible,this.land.visible];if(this.options.story){this.card.visible=false;this.land.visible=false;}yield*board.spawn(event.unit);[this.card.visible,this.land.visible]=visible;break;}
         case 'phase':
+          if(event.team!=='ally'&&this.tutorial&&!this.tutorial.finished){this.tutorial.finished=true;this.options.onTutorialDone?.();}
           if(this.options.phaseMusic){this.music=this.options.phaseMusic(event.team);if(this.music)yield*waitForAudio(this.show,[this.music]);this.app.sound.music(this.music??undefined);}
           if(event.team==='enemy')this.app.sound.play('alarm',.55);
           board.wake();

@@ -1,0 +1,6 @@
+import{it,expect}from'vitest';
+import{mkdtemp,mkdir,writeFile,readFile,rm}from'node:fs/promises';import{tmpdir}from'node:os';import{join}from'node:path';
+import{buildSite,cacheHeaders}from'../tools/site.mjs';
+it('creates a relative static index and cache policy while preserving old artifact files',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'static-site-'));try{const dist=join(root,'dist'),site=join(root,'site'),artifact=join(root,'artifact');await mkdir(dist);await mkdir(artifact);await writeFile(join(artifact,'old.json'),'historical');const html='<script type="module" src="./assets/game-hash.js"></script>';await writeFile(join(dist,'game.html'),html);await writeFile(join(dist,'pack-manifest.json'),'{}');const result=await buildSite(dist,site);expect(await readFile(join(site,'index.html'),'utf8')).toBe(html);expect(await readFile(join(artifact,'old.json'),'utf8')).toBe('historical');expect(result.files).toBe(4);expect(result.over25MiB).toEqual([]);expect(cacheHeaders).toContain('/*.json\n  Cache-Control: public, max-age=0');expect(cacheHeaders).toContain('/*.mp4\n  Cache-Control: public, max-age=31536000');await expect(buildSite(dist,dist)).rejects.toThrow('separate');}finally{await rm(root,{recursive:true,force:true});}
+});

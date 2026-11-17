@@ -70,7 +70,7 @@ export class CoreMap implements MapModel {
   }
   private view(s: BattleState, u: Unit): UnitView {
     const m = effectiveMech(s, u), p = effectivePilot(s, u), display = this.lookup.battle.pilot(p, u);
-    return { ...(s.content.rules.actions?{actionsRemaining:actionsLeft(u),actionsMax:actionLimit(s,u)+(u.extraActionsUsed??0)}:{}),revealed:faction(u)==='player'||!!u.revealed, id: u.id, team: this.team(u), cell: cell(u), name: unitName(s,u), barrier:runtime(s).barriers[u.id]??0, pilot: display.pilot ?? p.name, hp: u.hp, hpMax: m.hp,
+    return { ...(s.content.rules.actions?{actionsRemaining:actionsLeft(u),actionsMax:actionLimit(s,u)+(u.extraActionsUsed??0)}:{}),revealed:faction(u)==='player'||!!u.revealed, level:u.level,id: u.id, team: this.team(u), cell: cell(u), name: unitName(s,u), barrier:runtime(s).barriers[u.id]??0, pilot: display.pilot ?? p.name, hp: u.hp, hpMax: m.hp,
       en: u.en, enMax: m.en, heat: effectiveMorale(s,u), acted: u.acted, ...this.lookup.unit(m, u), portrait: display.portrait };
   }
   details(id:string):import('../map/model').UnitDetails {
@@ -201,6 +201,7 @@ export class CoreMap implements MapModel {
         const area=command?.type==='mapAttack'?mapForecast(rulesProjection(before,command.unitId,undefined,command.weaponId),command.unitId,command.weaponId,command.point,command.direction).cells:undefined;
         const exchange = battleExchange(before, events, this.lookup.battle, {changedForms:this.changedForms, area,background: this.lookup.backgroundFor?.(before.stage.id)??this.lookup.background });
         const rewards=new Map<string,number>();for(const e of events)if(e.type==='unit-defeated'){const reward=this.lookup.defeatReward?.(before,e);if(reward)rewards.set(reward.name,(rewards.get(reward.name)??0)+reward.amount);}if(rewards.size)exchange.rewards=[...rewards].map(([name,amount])=>({name,amount}));
+        const earned=events.filter(e=>('unitId'in e)&&before.units.find(u=>u.id===e.unitId)?.side==='player');exchange.settlement={exp:earned.reduce((n,e)=>n+(e.type==='exp-gained'?e.amount:0),0),credits:earned.reduce((n,e)=>n+(e.type==='credits-gained'?e.amount:0),0),levels:earned.flatMap(e=>e.type==='level-up'?[{name:before.content.pilots.find(p=>p.id===(e.pilotId??before.units.find(u=>u.id===e.unitId)?.pilotId))?.name??e.unitId,from:e.from,to:e.to}]:[])};
         if (events.some(e => e.type === 'map-attack')) exchange.strikes.forEach((s, i) => { if (i) s.weapon.cost = 0; });
         out.push({ type: 'battle', exchange });for(const e of events)if(e.type==='attack')this.changedForms.delete(e.attackerId);played = true;
       }

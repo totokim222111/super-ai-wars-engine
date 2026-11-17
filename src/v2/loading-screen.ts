@@ -1,3 +1,4 @@
+import {readable} from './presentation';
 import {FONT,wrap} from './ui';
 import {W,H} from './stage';
 import {focalImageRect,type ImageFocus} from './image-layout';
@@ -77,13 +78,13 @@ export class LoadingScreen {
   if(this.image?.naturalWidth){this.appeared+=dt;ctx.globalAlpha=opacity*Math.min(1,this.appeared/.3);const zoom=reduce?1:1.02+.04*Math.min(1,this.elapsed/8),r=focalImageRect(this.image.naturalWidth,this.image.naturalHeight,{x:0,y:0,w:W,h:H},this.slide?.focus??[.5,1/3],zoom,[0,0],'cover');ctx.drawImage(this.image,r.x,r.y,r.w,r.h);ctx.globalAlpha=opacity;}
   // A localized lower-left shade leaves the right two thirds clear.
   const shade=ctx.createRadialGradient(0,H,0,0,H,790);shade.addColorStop(0,'rgba(3,7,18,.94)');shade.addColorStop(.57,'rgba(3,7,18,.60)');shade.addColorStop(1,'rgba(3,7,18,0)');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);
-  if(this.image&&this.slide){ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=`32px ${FONT.display}`;const width=448,nameWidth=Math.min(width-36,ctx.measureText(this.slide.name).width);ctx.fillText(this.slide.name,48,H-166,width-36);ctx.fillStyle=this.slide.color;const x=48+nameWidth+14;ctx.beginPath();ctx.moveTo(x,H-192);ctx.lineTo(x+18,H-192);ctx.lineTo(x+8,H-168);ctx.lineTo(x-10,H-168);ctx.closePath();ctx.fill();
-   let size=18,lines:string[]=[];for(;size>=12;size--){ctx.font=`${size}px ${FONT.body}`;lines=wrap(ctx,this.quote,width);if(lines.length<=2)break;}if(lines.length<=2){ctx.fillStyle='rgba(255,255,255,.94)';lines.forEach((line,i)=>ctx.fillText(line,48,H-130+i*26));}
+  if(this.image&&this.slide){ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=`${readable(32)}px ${FONT.display}`;const width=448,nameWidth=Math.min(width-36,ctx.measureText(this.slide.name).width);ctx.fillText(this.slide.name,48,H-166,width-36);ctx.fillStyle=this.slide.color;const x=48+nameWidth+14;ctx.beginPath();ctx.moveTo(x,H-192);ctx.lineTo(x+18,H-192);ctx.lineTo(x+8,H-168);ctx.lineTo(x-10,H-168);ctx.closePath();ctx.fill();
+   let size=readable(18),lines:string[]=[];for(;size>=readable(12);size--){ctx.font=`${size}px ${FONT.body}`;lines=wrap(ctx,this.quote,width);if(lines.length<=2)break;}if(lines.length<=2){ctx.fillStyle='rgba(255,255,255,.94)';lines.forEach((line,i)=>ctx.fillText(line,48,H-130+i*26));}
   }
-  ctx.fillStyle='rgba(0,0,0,.64)';ctx.fillRect(0,H-64,W,64);ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=`bold 19px ${FONT.num}`;
+  ctx.fillStyle='rgba(0,0,0,.64)';ctx.fillRect(0,H-64,W,64);ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=`bold ${readable(19)}px ${FONT.num}`;
   let x=48;for(const c of 'NOW LOADING'){ctx.fillText(c,x,H-25);x+=ctx.measureText(c).width+2;}
   for(let i=0;i<3;i++){ctx.globalAlpha=opacity*(reduce||Math.floor(this.elapsed*3)%4>i?1:.22);ctx.fillText('.',x+i*8,H-25);}ctx.globalAlpha=opacity;
   const start=274,end=W-126;ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(start,H-34,end-start,4);ctx.fillStyle='#ffd23f';ctx.fillRect(start,H-34,(end-start)*p,4);
-  ctx.textAlign='right';ctx.font=`20px ${FONT.num}`;ctx.fillStyle='#fff';ctx.fillText(String(Math.floor(p*100)).padStart(3,' ')+'%',W-48,H-25);ctx.restore();
+  ctx.textAlign='right';ctx.font=`${readable(20)}px ${FONT.num}`;ctx.fillStyle='#fff';ctx.fillText(String(Math.floor(p*100)).padStart(3,' ')+'%',W-48,H-25);ctx.restore();
  }
 }

@@ -104,6 +104,9 @@ export interface Strike {
 
 /** 전투 한 판: 본 공격, 반격, 원호 공격을 일어난 순서대로 담는다. */
 export interface Exchange {
+  settlement?:{exp:number;credits:number;levels:{name:string;from:number;to:number}[]};
+  /** Runtime painter library, reconstructed from the pack; never part of rules/save data. */
+  animationArt?:import('./animation-art').AnimationArt;
   area?:{x:number;y:number}[];
   /** 격파 보상의 작은 알림. 지급 자체는 캠페인 어댑터가 끝냈다. */
   rewards?:{name:string;amount:number}[];

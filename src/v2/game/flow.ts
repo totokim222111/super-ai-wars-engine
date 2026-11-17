@@ -1,3 +1,5 @@
+import {setUiSize} from '../presentation';
+import {playerName} from '../../campaign/player';
 import {activeHints} from '../map/hints';
 import {waitForAudio} from '../pack/preload';
 import {ruleCommand} from '../rules/runtime';
@@ -6,7 +8,7 @@ import {terrainImages} from '../map/terrain';
 import {talkTargets} from '../../scenario/runner';
 import { definitions } from '../../scenario/compile';
 import type { Pack } from '../pack/load';
-import { packActors } from '../pack/load';
+import { packActors,packUnit } from '../pack/load';
 import { StoryEvents } from '../story/events';
 import { PackStoryScreen, StoryPlayback } from '../story/play';
 /** 타이틀 → 맵 → 결과 → 인터미션 → 다음 화. 대본은 실행하지 않는다. */
@@ -29,13 +31,15 @@ import type { App } from '../screen';
 import type { Sample } from '../gallery/sample';
 class GameMapScreen extends MapScreen {
     constructor(readonly rules: CoreMap, private readonly campaign: CoreCampaign, flow: GameFlow) {
-        super(rules, {speed:()=>campaign.settings().speed, ...flow.storyOptions(),hintOptions:flow.pack?.game.mapHints,hints:()=>{const s=rules.hintStatus(),ep=flow.pack?.game.episodes.find(e=>e.stage===s.stageId)?.id;return activeHints((flow.pack?.stageScripts?.[s.stageId]?.hints??[]).map(h=>{const u=h.unit&&s.units.find(u=>u.id===h.unit);return u?{...h,cell:{col:u.x,row:u.y}}:h;}),scene=>!!campaign.storyValue(`v2:hint-fired:${ep}:${scene}`)||!!campaign.storyValue(`v2:story:${ep}:${scene}`),id=>!!campaign.session.campaign.flags[id]||!!campaign.storyValue(id),s.round,id=>{const u=s.units.find(u=>u.id===id);return u?u.alive&&!u.removed:s.pending.includes(id);});},animation:()=>campaign.settings().animation,setAnimation:value=>campaign.setSettings({...campaign.settings(),animation:value}),objectives:flow.pack?.game.episodes.find(e=>e.stage===rules.state().stage.id)?.objectives,opening:!!flow.pack&&!campaign.storyValue(`v2:sortie:${flow.pack.game.episodes.find(e=>e.stage===rules.state().stage.id)?.id}`), onExit: () => flow.askTitle(), onEnd: () => flow.finish(), phaseMusic:team=>flow.mapMusic?.phase(team,rules.state().round),eventMusic:event=>flow.eventMusic(event),battle: exchange => ({ ...options(campaign), music: flow.pack?battleMusic(rules.state(),exchange,flow.pack.game.music,flow.pack.game.musicRules,u=>flow.castTheme(u)):undefined,opening:flow.pack?.game.musicRules?.battleOpening }),
+        super(rules, {speed:()=>campaign.settings().speed,tutorial:()=>!!flow.pack&&rules.state().stage.id===flow.pack.game.episodes[0]?.stage&&!campaign.session.campaign.cycle&&!campaign.settings().helpSeen&&campaign.settings().tutorial!==false,onTutorialDone:()=>campaign.setSettings({...campaign.settings(),helpSeen:true}), ...flow.storyOptions(),hintOptions:flow.pack?.game.mapHints,hints:()=>{const s=rules.hintStatus(),ep=flow.pack?.game.episodes.find(e=>e.stage===s.stageId)?.id;return activeHints((flow.pack?.stageScripts?.[s.stageId]?.hints??[]).map(h=>{const u=h.unit&&s.units.find(u=>u.id===h.unit);return{...h,name:flow.displayName(h.name),objective:h.objective?flow.displayName(h.objective):undefined,...(u?{cell:{col:u.x,row:u.y}}:{})};}),scene=>!!campaign.storyValue(`v2:hint-fired:${ep}:${scene}`)||!!campaign.storyValue(`v2:story:${ep}:${scene}`),id=>!!campaign.session.campaign.flags[id]||!!campaign.storyValue(id),s.round,id=>{const u=s.units.find(u=>u.id===id);return u?u.alive&&!u.removed:s.pending.includes(id);});},animation:()=>campaign.settings().animation,setAnimation:value=>campaign.setSettings({...campaign.settings(),animation:value}),objectives:flow.displayObjectives(rules.state().stage.id),opening:!!flow.pack&&!campaign.storyValue(`v2:sortie:${flow.pack.game.episodes.find(e=>e.stage===rules.state().stage.id)?.id}`), onExit: () => flow.askTitle(), onEnd: () => flow.finish(), phaseMusic:team=>flow.mapMusic?.phase(team,rules.state().round),eventMusic:event=>flow.eventMusic(event),battle: exchange => ({ ...options(campaign), music: flow.pack?battleMusic(rules.state(),exchange,flow.pack.game.music,flow.pack.game.musicRules,u=>flow.castTheme(u)):undefined,opening:flow.pack?.game.musicRules?.battleOpening }),
             menu: [{ label: '저장', run: () => flow.save() }, { label: '설정', run: () => flow.settings() }] });
         const ep=flow.pack?.game.episodes.find(e=>e.stage===rules.state().stage.id);flow.mapMusic=new MapMusic(ep?.mapMusic??flow.pack?.game.musicRules?.stages?.[rules.state().stage.id]?.map??flow.pack?.game.music.map,flow.pack?.game.music['enemy-phase']);flow.musicUnits=new Map(rules.units().map(u=>[u.id,u.team]));this.music=flow.mapMusic.phase(rules.turn().team,rules.state().round);
     }
     enter(): void { super.enter();const paint=this.rules.terrainPaint();if(paint&&terrainImages(paint).some(i=>!i?.naturalWidth))this.stage.ui.add(at(label('임시 지형 · 맵 재료 준비 중',18,{color:'#ffd23f',align:'right'}),1200,76)); this.stage.camera.shakeScale = this.campaign.settings().shake / 10; }
 }
 export class GameFlow {
+    displayName(value:string):string{const p=this.pack;if(!p)return value;const aliases=[...new Set([p.cast[p.players.actor??'']?.name,...p.players.presets.flatMap(v=>v.cast?[p.cast[v.cast]?.name]:[])].filter((n):n is string=>!!n))];return aliases.reduce((s,n)=>s.replaceAll(n,playerName(this.model.session.campaign)),value);}
+    displayObjectives(stage:string):import('../map/objectives').Objectives|undefined{const o=this.pack?.game.episodes.find(e=>e.stage===stage)?.objectives;if(o)return{...o,win:[...new Set(o.win.map(v=>this.displayName(v)))],lose:[...new Set(o.lose.map(v=>this.displayName(v)))]};}
     map?: CoreMap;
     storyEvents?: StoryEvents;
     playback?: StoryPlayback;
@@ -68,8 +72,8 @@ export class GameFlow {
     constructor(readonly app: App, readonly model: CoreCampaign, private readonly sample: Pick<Sample,'images'>, private readonly leave?: () => void, readonly pack?: Pack) {
         if(pack)pack.progressFlag=flag=>model.storyValue(flag);
         if(app.loadingScreen)app.loadingScreen.flagValue=flag=>model.storyValue(flag);
-        this.look = { background: sample.images[pack?.game.titleArt.background??''], portraits: (pack?.players.presets??[]).map(p=>sample.images[p.portrait??'']), temporary: !!pack&&pack.players.presets.some(p=>pack.cast[p.cast??'']?.temporary) };
-        model.onSettings = s => { if(app.cinematics)app.cinematics.enabled=s.cinematic!==false; app.sound.sfxVolume = s.sfx / 10; app.sound.musicVolume = s.music / 10; };
+        this.look = {lineImages:Object.fromEntries((pack?.players.lines??[]).map(l=>{const id=Object.values(l.mechs??{})[0];return[l.id,id&&pack?sample.images[packUnit(pack,id,'player').art??'']:undefined];})), background: sample.images[pack?.game.titleArt.background??''], portraits: (pack?.players.presets??[]).map(p=>sample.images[p.portrait??'']), temporary: !!pack&&pack.players.presets.some(p=>pack.cast[p.cast??'']?.temporary) };
+        model.onSettings = s => { setUiSize(s.uiSize??'auto'); app.flashScale=(s.flash??7)/10; if(app.cinematics)app.cinematics.enabled=s.cinematic!==false; app.sound.sfxVolume = s.sfx / 10; app.sound.musicVolume = s.music / 10; };
         model.onSettings(model.settings());
     }
     /** 현재 진행은 model에 보존한 채 화면 쌓기만 걷는다. */
@@ -177,9 +181,9 @@ export class GameFlow {
         const hub = new IntermissionScreen(this.model, routes, { ...this.look, music: this.pack?.game.music.intermission, art: this.sample.images[this.pack?.game.menuArt??this.pack?.game.titleArt.character??''] });
         this.app.push(hub, 'none');
         hub.ui.setNavigation({kind:'back',onBack:()=>this.askTitle()});
-        hub.stage.ui.add(at(label('임시 그림 포함', 17, { color: '#ffd23f' }), 506, 90));
+
     }
     save(): void { this.app.push(new SaveScreen(this.model, 'save', undefined, {...this.look,music:this.pack?.game.music.save??this.pack?.game.music.intermission})); }
-    settings(): void { this.app.push(new SettingsScreen(this.model, this.look)); }
+    settings(): void { this.app.push(new SettingsScreen(this.model,this.look,()=>{if(this.app.top instanceof MapScreen)this.app.top.replayTutorial();})); }
     askTitle(): void { this.app.push(new ConfirmScreen('타이틀로 돌아갈까요?\n저장하지 않은 진행은 이어하기에 반영되지 않습니다.', () => this.title()), 'none'); }
 }

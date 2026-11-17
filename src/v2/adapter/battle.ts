@@ -11,6 +11,7 @@ import type { BattleEvent, BattleState, Mech, Pilot, Response, Unit, Weapon as C
 import type { Exchange, Fighter, Lines, Side, Strike, Weapon } from '../battle/types';
 
 export interface BattleLookup {
+  animationArt?:import('../battle/animation-art').AnimationArt;
   mech(mech: Mech, unit: Unit): Pick<Fighter, 'height' | 'faces' | 'image' | 'anchors'>;
   /** 공용 무인 파일럿은 표시 이름만 기체의 cast 이름으로 덮을 수 있다. */
   pilot(pilot: Pilot, unit: Unit): Pick<Fighter, 'portrait' | 'cutin'> & { pilot?: string };
@@ -31,9 +32,11 @@ export interface BattleOptions {
   changedForms?:ReadonlySet<string>;
   response?: { unitId: string; response: Response };
 }
+const histories=new WeakMap<BattleLookup,{stage:string;round:number;picker:BattleLinePicker}>();
+export function battleLineAudit(lookup:BattleLookup){return histories.get(lookup)?.picker.picks.map(p=>({...p}))??[];}
 
 export function battleExchange(before: BattleState, events: readonly BattleEvent[], lookup: BattleLookup, options: BattleOptions = {}): Exchange {
-  const picker=new BattleLinePicker(before.rng),hp=new Map(before.units.map(u=>[u.id,u.hp]));
+  let history=histories.get(lookup);if(!history||history.stage!==before.stage.id||history.round>before.round){history={stage:before.stage.id,round:before.round,picker:new BattleLinePicker(before.rng)};histories.set(lookup,history);}history.round=before.round;const picker=history.picker;picker.beginExchange();const hp=new Map(before.units.map(u=>[u.id,u.hp]));
   const responses = new Map<string, Response>();
   if (options.response) responses.set(options.response.unitId, options.response.response);
   // response는 apply가 resolve 앞에 붙인다. 부가 이벤트의 순서에 의존하지 않는다.
@@ -51,7 +54,7 @@ export function battleExchange(before: BattleState, events: readonly BattleEvent
     const left=Math.max(0,(hp.get(defender.id)??0)-e.hpDamage);hp.set(defender.id,left);
     const guard=!!cover || !e.counter && !helper && responses.get(e.targetId)?.type === 'defend';
     const cast=(u:Unit)=>lookup.castId?.(u,pilot(u))??u.pilotId;
-    const pick=(u:Unit,situation:Parameters<BattleLinePicker['pick']>[1],other:Unit)=>{const line=picker.pick(lookup.battleLines?.(u,pilot(u)),situation,lookup.lineWeapon?.(e.weaponId)??e.weaponId,cast(other),{form:formName(before,u)??u.formId,mech:effectiveMech(before,u).id,formChanged:options.changedForms?.has(u.id)});return line?{...line,text:lookup.text?.(line.text)??line.text}:undefined;};
+    const pick=(u:Unit,situation:Parameters<BattleLinePicker['pick']>[1],other:Unit)=>{const line=picker.pick(lookup.battleLines?.(u,pilot(u)),situation,lookup.lineWeapon?.(e.weaponId)??e.weaponId,cast(other),{speaker:cast(u),kind:weapon.kind,form:formName(before,u)??u.formId,mech:effectiveMech(before,u).id,formChanged:options.changedForms?.has(u.id)});return line?{...line,text:lookup.text?.(line.text)??line.text}:undefined;};
     const animation=lookup.weapon(weapon,unit);
     const lines:Lines=lookup.lines?.(e)??{
       before:pick(unit,animation.cutin||animation.anim.template==='finisher'?'finisher':'attack',defender),
@@ -87,5 +90,5 @@ export function battleExchange(before: BattleState, events: readonly BattleEvent
     return { id, side,revealed, name: unitName(before,unit), pilot: pilot.name, hp: unit.hp, hpMax: mech.hp, en: unit.en, enMax: mech.en,
       ...lookup.mech(mech, unit), ...lookup.pilot(pilot, unit) } satisfies Fighter;
   });
-  return { ...(options.area?{area:options.area}:{}),...(options.background ? { background: options.background } : {}), fighters, strikes };
+  return { ...(lookup.animationArt?{animationArt:lookup.animationArt}:{}),...(options.area?{area:options.area}:{}),...(options.background ? { background: options.background } : {}), fighters, strikes };
 }

@@ -15,12 +15,21 @@ export type Sfx =
   | 'cursor' | 'confirm' | 'important' | 'cancel' | 'deny' | 'text'          // 메뉴와 대사
   | 'whoosh' | 'slash' | 'shot' | 'hit' | 'heavy' | 'explode'   // 전투
   | 'charge' | 'flash' | 'gauge' | 'cg-cold'
-  | 'beam' | 'missile' | 'transform' | 'servo' | 'alarm' | 'levelup';
+  | 'beam' | 'missile' | 'transform' | 'servo' | 'alarm' | 'levelup'
+  | 'ground-thud' | 'shield-clang' | 'whip' | 'ice-break' | 'electric' | 'splash' | 'popup' | 'stamp';
 
 /** 소리 한 겹. wave가 noise면 from→to는 걸러 내는 주파수, 아니면 음높이(Hz)다. */
 interface Layer { wave: OscillatorType | 'noise'; from: number; to?: number; time: number; gain: number; delay?: number; highpass?: number }
 
 const RECIPES: Record<Sfx, Layer[]> = {
+  'ground-thud':[{wave:'sine',from:85,to:32,time:.22,gain:.45},{wave:'noise',from:400,to:70,time:.18,gain:.22}],
+  'shield-clang':[{wave:'triangle',from:1450,to:600,time:.12,gain:.18},{wave:'noise',from:4500,to:1100,time:.06,gain:.15}],
+  whip:[{wave:'noise',from:700,to:7500,time:.12,gain:.2},{wave:'noise',from:9000,to:1400,time:.055,gain:.3,delay:.11}],
+  'ice-break':[{wave:'noise',from:11000,to:3200,time:.16,gain:.24,highpass:2200},{wave:'sine',from:2400,to:520,time:.08,gain:.06}],
+  electric:[{wave:'sawtooth',from:180,to:2800,time:.13,gain:.1},{wave:'noise',from:6500,to:600,time:.1,gain:.22}],
+  splash:[{wave:'noise',from:800,to:3800,time:.23,gain:.23},{wave:'sine',from:240,to:60,time:.1,gain:.1}],
+  popup:[{wave:'triangle',from:380,to:900,time:.055,gain:.12},{wave:'noise',from:2700,to:800,time:.045,gain:.12}],
+  stamp:[{wave:'noise',from:1600,to:230,time:.085,gain:.32},{wave:'sine',from:115,to:55,time:.12,gain:.24}],
   'cg-cold': [{wave:'sine',from:96,to:62,time:1.5,gain:.08},{wave:'sine',from:193,to:124,time:1.7,gain:.025,delay:.08}],
   cursor: [{ wave: 'noise', from: 1800, to: 700, time: 0.022, gain: 0.07 }],
   confirm: [{ wave: 'noise', from: 2600, to: 600, time: 0.04, gain: 0.1 }],

@@ -38,7 +38,7 @@ export interface PartItem { id: string; name: string; description: string; owned
 export interface PartUnit { id: string; name: string; slots: (PartItem | null)[] }
 export interface PilotInfo { id: string; name: string; level: number; exp: number; portrait?: import('../ui').Portrait; stats: [string, string][]; spirits: string[]; skills: string[] }
 export interface SaveSlot { id: string; label: string; available: boolean; detail: string }
-export interface MenuSettings { cinematic?:boolean; sfx: number; music: number; animation: 'on' | 'off' | 'allies'; speed: number; shake: number }
+export interface MenuSettings {uiSize?:import('../presentation').UiSize; cinematic?:boolean;flash?:number;enemyBattle?:'full'|'brief';helpSeen?:boolean;tutorial?:boolean; sfx: number; music: number; animation: 'on' | 'off' | 'allies'; speed: number; shake: number }
 export interface StageResult { title: string; won: boolean; credits: number; exp: number; kills: number; parts: string[]; levels: string[]; training?:{pilotId:string;name:string;amount:number;clear?:number}[] }
 export interface PilotTraining {pilotId:string;points:number;stats:{id:string;label:string;value:number;next?:number;cost?:number}[];skills:{id:string;name:string;description:string;level:number;next?:number;cost?:number}[]}
 export interface NewGameDraft { name: string; preset: number; line: string }

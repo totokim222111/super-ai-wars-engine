@@ -1,3 +1,4 @@
+import {readable,largeUi} from './presentation';
 import {Shape,W,H} from './stage';
 import {panel,FONT,COLOR,wrap} from './ui';
 import {displayTerms,term} from './terms';
@@ -9,7 +10,7 @@ export function spiritTip(s:{name:string;cost:number|string;desc?:string;duratio
 /** Shared readable tooltip. Placement is clamped and keeps the source list unobstructed. */
 export class Tooltip extends Shape<{tip?:Tip}> {
  w=390;h=150;
- constructor(){super({},(ctx,s)=>{if(!s.tip)return;ctx.font=`700 17px ${FONT.body}`;const lines=s.tip.lines.filter(Boolean).flatMap(l=>wrap(ctx,displayTerms(l),this.w-36));this.h=64+lines.length*24;const oldY=this.y;this.y=Math.max(60,Math.min(H-42-this.h,this.y));ctx.translate(0,this.y-oldY);panel(ctx,0,0,this.w,this.h,COLOR.gold);ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle=COLOR.gold;ctx.font=`900 21px ${FONT.body}`;ctx.fillText(s.tip.title,18,15,this.w-36);ctx.font=`700 17px ${FONT.body}`;lines.forEach((l,i)=>{ctx.fillStyle=i===lines.length-1&&s.tip!.lines.at(-1)?.includes('불가')?COLOR.enemy:COLOR.ink;ctx.fillText(l,18,50+i*24,this.w-36);});});this.z=96;this.visible=false;}
+ constructor(){super({},(ctx,s)=>{if(!s.tip)return;ctx.font=`700 ${readable(17)}px ${FONT.body}`;const lines=s.tip.lines.filter(Boolean).flatMap(l=>wrap(ctx,displayTerms(l),this.w-36));this.h=64+lines.length*(largeUi()?30:24);const oldY=this.y;this.y=Math.max(60,Math.min(H-42-this.h,this.y));ctx.translate(0,this.y-oldY);panel(ctx,0,0,this.w,this.h,COLOR.gold);ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle=COLOR.gold;ctx.font=`900 ${readable(21)}px ${FONT.body}`;ctx.fillText(s.tip.title,18,15,this.w-36);ctx.font=`700 ${readable(17)}px ${FONT.body}`;lines.forEach((l,i)=>{ctx.fillStyle=i===lines.length-1&&s.tip!.lines.at(-1)?.includes('불가')?COLOR.enemy:COLOR.ink;ctx.fillText(l,18,50+i*(largeUi()?30:24),this.w-36);});});this.z=96;this.visible=false;}
  show(tip:Tip,avoid?:Rect):void{this.state.tip=tip;this.visible=true;this.w=390;if(avoid){const right=W-avoid.x-avoid.w-24,left=avoid.x-24;if(right>=300){this.w=Math.min(390,right);this.x=avoid.x+avoid.w+12;this.y=avoid.y;}else if(left>=300){this.w=Math.min(390,left);this.x=avoid.x-this.w-12;this.y=avoid.y;}else{this.x=Math.max(20,Math.min(W-this.w-20,avoid.x));this.y=avoid.y>H/2?Math.max(60,avoid.y-175):avoid.y+avoid.h+12;}}this.x=Math.max(16,Math.min(W-this.w-16,this.x));}
  hide():void{this.visible=false;this.state.tip=undefined;}
 

@@ -1,6 +1,6 @@
 /** Encoded media survive restarts where Cache API is available; HTTP remains the fallback. */
 export interface MediaEntry {file:string;hash:string;bytes:number;kind:'image'|'audio'|'video'|'metadata'}
-export interface AssetGroup {images:string[];audio:string[];videos?:string[];files:string[]}
+export interface AssetGroup {optionalImages?:string[];images:string[];audio:string[];videos?:string[];files:string[]}
 export interface StageAssets {version:string;pack:string;entries:Record<string,MediaEntry>;boot:AssetGroup;stages:Record<string,AssetGroup>;loading?:import('./loading-screen').LoadingManifest}
 export class MediaCache {
   private memory=new Map<string,ArrayBuffer>();private memoryBytes=0;private pending=new Map<string,Promise<ArrayBuffer>>();private cache?:Promise<Cache|undefined>;

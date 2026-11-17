@@ -1,3 +1,4 @@
+import {AnimationArt,animationArtIssues,animationSprites,type AnimationArtSpec} from '../battle/animation-art';
 import {battleLineIssues,type BattleLines,type PackBattleDialogue} from '../battle/lines';
 import {mediaPath} from './paths';
 import {resolveMusic} from '../game/music';
@@ -18,11 +19,13 @@ import type { CampaignContent } from '../../campaign/content';
 import type { Actor } from '../director';
 import type { Anchors, WeaponAnim } from '../battle/types';
 import { TEMPLATES } from '../battle/templates';
+import {sequenceIssues} from '../battle/moves/catalog';
 import type { MapLookup } from '../adapter/map';
 import type { Spirit } from '../spirit';
 import { parseStory, type Issue, type Story } from '../story/parse';
 
 export interface CastDef {
+    cutinEye?:[number,number];
     theme?:string;themePriority?:number;enemyTheme?:string;enemyThemePriority?:number;
     battleLines?:BattleLines;
     moodAliases?:Record<string,string>;
@@ -67,6 +70,7 @@ interface Fallback {
 }
 export interface StageAdjustment {enemyPilotScaling?:import('../../core').EnemyPilotScaling;content?:import('../../core').Stage['contentOverrides'];units?:Record<string,Partial<import('../../core').StageUnit>>;rules?:Partial<RulesConfig>;enemyUpgradeLevel?:number;aliases?:Record<string,string>}
 export interface PackGame {
+    animationArt?:string|AnimationArtSpec;
     visibility?:{flag:string;cast?:string[];units?:string[];images?:string[];scenes?:string[]}[];
     recruitment?:import('./progression').Recruitment;
     loadingScreens?:import('../loading-screen').LoadingEntry[];
@@ -133,6 +137,7 @@ export interface PackGame {
 
 }
 export interface Pack {
+    animationArt?:AnimationArtSpec;
     progressFlag?:(flag:string)=>string|number|boolean;
     assets?:import('./assets').StageLoader;
     stageRewards?:Record<string,Record<string,number>>;
@@ -205,6 +210,7 @@ export async function loadPack(root: string, read: ReadText, exists?: (path: str
         else {const value=await json(resolvePath(root,game[name]));if(value&&typeof value==='object'&&!Array.isArray(value))Object.assign(progression,{[name]:value});else errors.push({file:resolvePath(root,game[name]),line:1,message:'최상위 값은 JSON 객체여야 합니다.',fix:'자료를 { ... } 객체로 적으세요.'});}
     }
     const stageAdjustments=typeof game.stageAdjustments==='string'?await json(resolvePath(root,game.stageAdjustments))as Record<string,StageAdjustment>:game.stageAdjustments??{};
+    const animationArt=typeof game.animationArt==='string'?await json(resolvePath(root,game.animationArt))as AnimationArtSpec:game.animationArt;
     const battleDialogue=game.battleDialogue?await json(resolvePath(root,game.battleDialogue))as PackBattleDialogue:undefined;
     let players=game.players?await json(resolvePath(root,game.players))as PlayerConfig:structuredClone(defaultPlayers);try{validatePlayers(players);}catch(e){errors.push({file:resolvePath(root,game.players??'game.json'),line:1,message:String(e),fix:'중복 없는 타입·계열과 유효한 이름 규칙을 적으세요.'});players=structuredClone(defaultPlayers);}
     const defaults=loadRules(),overrides=game.battleRules;const battleRules={...defaults,...overrides,ai:{...defaults.ai,...overrides?.ai},k:{...defaults.k,...overrides?.k},morale:{...defaults.morale,...overrides?.morale}};
@@ -273,7 +279,7 @@ export async function loadPack(root: string, read: ReadText, exists?: (path: str
     if(options.examples!==false)try {const indexText=await read(`${root}/samples.json`);sources[`${root}/samples.json`]=indexText;const index=JSON.parse(indexText)as {id:string;title:string;stage:string;story:string}[];for(const example of index){const path=`${root}/${example.story}`,text=await read(path),parsed=parseStory(text,path,{cast,images:Object.keys(game.art?.files??{}),affectionAliases:game.story?.affectionAliases});sources[path]=text;errors.push(...parsed.issues);if(!parsed.stage){errors.push({file:path,line:1,message:'견본의 @ 규칙이 없습니다.',fix:'@ 규칙과 @ 맵을 적으세요.'});continue;}const compiled=compileStage(parsed.stage,{id:example.stage,name:example.title,content:raw as unknown as Content,roster:Object.values(campaign.stages).flatMap(s=>s.stage.units.filter(u=>u.side==='player')),defaultMap:game.defaultMap,defaultPilot:game.defaultPilot,cast,units,scenes:parsed.scenes},path);errors.push(...compiled.issues);examples.push({...example,parsed,compiled});}}catch(e){if(sources[`${root}/samples.json`])errors.push({file:`${root}/samples.json`,line:1,message:String(e),fix:'견본 목록과 story 경로를 확인하세요.'});}
     for(const example of examples){const c=example.compiled;if(c.mapArt&&!game.art.files[c.mapArt])errors.push({file:`${root}/${example.story}`,line:example.parsed.stage!.rules.find(r=>r.text.startsWith('맵 그림:'))?.line??1,message:`없는 맵 그림: ${c.mapArt}`,fix:'game.json art.files에 그림을 등록하세요.'});if(!maps[c.setting])errors.push({file:`${root}/${example.story}`,line:example.parsed.stage!.line,message:`없는 무대: ${c.setting}`,fix:'game.maps의 무대 이름을 쓰세요.'});}
     for(const c of Object.values(stageScripts))for(const co of configOf(c.stage).combos)weapons[co.virtual]=structuredClone(weapons[co.weapon]);
-    const pack: Pack = {stageRewards:game.stageRewards,battleDialogue, root, game, cast, units, weapons, spirits, rules: raw as unknown as Content, campaign, stories, errors, warnings, sources,maps,stageScripts,examples,players,...progression,...(audio?{audio}:{}) };
+    const pack: Pack = {animationArt,stageRewards:game.stageRewards,battleDialogue, root, game, cast, units, weapons, spirits, rules: raw as unknown as Content, campaign, stories, errors, warnings, sources,maps,stageScripts,examples,players,...progression,...(audio?{audio}:{}) };
     const chars=new Set<string>();for(const t of (Array.isArray(raw.terrain)?raw.terrain:[])as (Content['terrain'][number]&{char?:string})[])if(t.char!==undefined){if(typeof t.char!=='string'||t.char.length!==1||chars.has(t.char))errors.push({file:`${root}/rules.json`,line:1,message:`지형 char 오류 또는 중복: ${t.id}`,fix:'terrain의 char는 지형마다 다른 한 글자로 적으세요.'});else chars.add(t.char);}
     for(const [id,theme]of Object.entries(maps)){
         const path=resolvePath(root,game.maps![id]),bad=(message:string,fix:string)=>errors.push({file:path,line:1,message,fix});
@@ -301,17 +307,19 @@ export async function loadPack(root: string, read: ReadText, exists?: (path: str
         for(const [id,entry]of Object.entries({...audio?.sfx,...audio?.bgm}))if(!await exists(game.audio.base+entry.file))warnings.push({file:game.audio.pack??`${root}/game.json`,line:1,kind:'소리 파일',message:`소리 파일 없음: ${id}`,fix:`${game.audio.base+entry.file}에 승인 소리를 넣으세요.`});
         for (const [id, path] of Object.entries(game.art?.files ?? {}))
             if (!await exists(path)) {
+                if(animationSprites(animationArt).some(([,e])=>e.art===id)){errors.push({file:typeof game.animationArt==='string'?resolvePath(root,game.animationArt):root+'/game.json',line:1,message:'연출 그림 파일 없음: '+id,fix:path+'에 아틀라스를 넣으세요.'});continue;}
                 warnings.push({ file: `${root}/game.json`, line: 1, kind: '그림 파일', message: `그림 파일 없음: ${id}`, fix: `${path}에 그림을 넣으세요.` });
             }
     }
     return pack;
 }
-const parameters: Record<string, string[]> = { "artillery": ["count", "color"], "beam": ["color", "width", "ticks", "charge"], "charge-ram": ["charge", "color"], "finisher": ["hits", "color", "width", "text"], "funnel": ["count", "color"], "heavy-shot": ["color", "charge", "size"], "missile-salvo": ["from", "count", "color"], "punch-rush": ["hits", "color", "words"], "rapid-fire": ["rows", "shots", "labels", "color"], "slash-combo": ["hits", "words", "finisher", "finisherWord", "color"], "spread-shot": ["count", "spread", "color"], "word-slam": ["text", "size", "color"] };
+const parameters: Record<string, string[]> = { "sequence": ["moves","element","closer","tier","color"], "artillery": ["count", "color"], "beam": ["color", "width", "ticks", "charge"], "charge-ram": ["charge", "color"], "finisher": ["hits", "color", "width", "text"], "funnel": ["count", "color"], "heavy-shot": ["color", "charge", "size"], "missile-salvo": ["from", "count", "color"], "punch-rush": ["hits", "color", "words"], "rapid-fire": ["rows", "shots", "labels", "color"], "slash-combo": ["hits", "words", "finisher", "finisherWord", "color"], "spread-shot": ["count", "spread", "color"], "word-slam": ["text", "size", "color"] };
 export function validatePack(p: Pack): void {
     p.errors.push(...progressionIssues(p,p.rules,p.root,p.sources,{economy:p.game.economy?resolvePath(p.root,p.game.economy):undefined,training:p.game.training?resolvePath(p.root,p.game.training):undefined}));
     const add = (file: string, id: string, message: string, fix: string, kind?: string) => { const path = `${p.root}/${file}.json`, index = (p.sources[path] ?? '').indexOf(`"${id}"`), line = index < 0 ? 1 : (p.sources[path].slice(0, index).match(/\n/g)?.length ?? 0) + 1; (kind ? p.warnings : p.errors).push({ file: path, line, message, fix, ...(kind ? { kind } : {}) }); };
     const mechs = p.rules.mechs ?? [], weapons = p.rules.weapons ?? [];
     const art = p.game.art?.files ?? {};
+    if(p.animationArt)for(const message of animationArtIssues(p.animationArt,art))add('game','animationArt',message,'연출 그림 id·아틀라스 사각형·0~1 기준점·방향을 확인하세요.');
     for(const[id,focus]of Object.entries(p.game.art?.focus??{}))if(!art[id]||!Array.isArray(focus)||focus.length!==2||focus.some(v=>!Number.isFinite(v)||v<0||v>1))add('game',id,'삽화 초점 오류','art.files의 id와 0~1 범위 [x,y]를 쓰세요.');
     const cinema=p.game.cinematics;
     const checkVideo=(id:string,file='game')=>{if(!cinema?.videos?.[id])add(file,id,'등록되지 않은 영상: '+id,'cinematics.videos에 id를 선언하세요.');};
@@ -391,6 +399,10 @@ export function validatePack(p: Pack): void {
             add('weapons', id, `없는 연출 틀: ${w.anim?.template}`, '등록된 틀 이름을 쓰세요.');
             continue;
         }
+        if(w.anim.template==='sequence'){
+            for(const message of sequenceIssues(w.anim))add('weapons',id,`틀 값 오류: ${id}: ${message}`,'sequence의 등록된 move/prop/element/closer와 길이 예산을 사용하세요.');
+            continue;
+        }
         for (const [k, v] of Object.entries(w.anim)) {
             if (k === 'template')
                 continue;
@@ -429,7 +441,7 @@ export function packUnit(p:Pick<Pack,'units'|'game'>,id:string,side:string,formI
     const base=p.units[id]??{},u={...base,...(formId?base.forms?.[formId]:{})},f=side==='player'?p.game.fallbacks.ally:p.game.fallbacks.enemy;
     return {...f,...u,art:u.recolor?recolorId(id,formId&&base.forms?.[formId]?.recolor?formId:undefined):u.art??f.art,icon:u.icon??(u.art||u.recolor?undefined:f.icon)};
 }
-export function packLookup(p: Pick<Pack, 'cast' | 'units' | 'weapons' | 'spirits' | 'game'>&Partial<Pick<Pack,'maps'|'stageScripts'|'players'|'battleDialogue'|'rules'>>, images: Record<string, HTMLImageElement | undefined>, playerCast?: () => string|undefined,values?:()=>Record<string,string>): MapLookup {
+export function packLookup(p: Pick<Pack, 'cast' | 'units' | 'weapons' | 'spirits' | 'game'>&Partial<Pick<Pack,'maps'|'stageScripts'|'players'|'battleDialogue'|'rules'|'animationArt'>>, images: Record<string, HTMLImageElement | undefined>, playerCast?: () => string|undefined,values?:()=>Record<string,string>): MapLookup {
     const portrait=(id:string)=>castPortrait(p.cast[id]??p.cast[p.game.fallbacks.enemy.cast]??Object.values(p.cast)[0],images);
     const unit=(id:string,side:string,form?:string)=>packUnit(p,id,side,form);
     const castId=(u:Unit,pilot:import('../../core').Pilot)=>{
@@ -442,7 +454,10 @@ export function packLookup(p: Pick<Pack, 'cast' | 'units' | 'weapons' | 'spirits
       const requested=unit(u.mechId,u.side,u.formId).pilotCast;
       return requested&&p.cast[requested]?.bust?requested:mapped??(pilot.id===p.players?.pilotId?p.players.presets[0]?.cast:undefined)??Object.keys(p.cast).find(id=>id===pilot.character||p.cast[id].aliases?.includes(pilot.character??''))??p.game.fallbacks.enemy.cast;
     };
-    return {unitInfo:p.game.unitInfo,terrainFor:s=>{const theme=p.maps?.[p.stageScripts?.[s.stage.id]?.setting??p.game.defaultMap??Object.keys(p.maps??{})[0]];return theme?{tiles:s.stage.map.tiles,theme,images,painted:p.stageScripts?.[s.stage.id]?.mapArt}:undefined;},aiCommand:(s,c)=>stageAI(p.stageScripts?.[s.stage.id],s,c),terrain:images[p.game.fallbacks.terrain],background:images[p.game.fallbacks.background],backgroundFor:stageId=>images[p.game.episodes?.find(e=>e.stage===stageId)?.battleBackground??p.game.fallbacks.background],unit:(m,u)=>{const d=unit(m.id,u.side,u.formId);return {icon:images[d.icon??d.art],...(!d.icon?{iconFit:true}:{}),...(!d.icon&&d.iconCrop?{iconCrop:d.iconCrop}:{})};},battle:{mech:(m,u)=>{const d=unit(m.id,u.side,u.formId);return {image:images[d.art],height:d.height??335,faces:d.faces??(u.side==='player'?'left':'right'),anchors:d.anchors};},pilot:(pilot,u)=>{const requested=unit(u.mechId,u.side,u.formId).pilotCast;const id=castId(u,pilot);const r=p.cast[id]?.cutin;return {portrait:portrait(id),...(p.game.anonymousPilots?.includes(pilot.id)&&requested?{pilot:p.cast[id].name}:{}),...(r?{cutin:{x:r[0],y:r[1],w:r[2],h:r[3]}}:{})};},castId,lineWeapon:id=>p.weapons[id]?.lineSource??id,battleLines:(u,pilot)=>{const generic=p.game.anonymousPilots?.includes(pilot.id)?p.battleDialogue?.defaults?.enemy:undefined;return generic&&!unit(u.mechId,u.side,u.formId).pilotCast?generic:p.cast[castId(u,pilot)]?.battleLines??generic;},text:text=>text.replace(/\{([^{}]+)\}/g,(token,key:string)=>values?.()[p.players?.placeholders?.[key]??'']??token),comboDialogue:id=>p.battleDialogue?.combos?.find(c=>c.binding?.ids.includes(id)),side:u=>u.side==='enemy'?'enemy':'ally',weapon:w=>({...p.weapons[w.id],anim:p.weapons[w.id]?.anim??{template:'heavy-shot'},cutin:p.weapons[w.id]?.cutin??p.weapons[w.id]?.anim.template==='finisher'})},spirit:d=>({name:d.name,...(p.spirits[d.id]??{kind:'focus'})})};
+    return {unitInfo:p.game.unitInfo,terrainFor:s=>{const theme=p.maps?.[p.stageScripts?.[s.stage.id]?.setting??p.game.defaultMap??Object.keys(p.maps??{})[0]];return theme?{tiles:s.stage.map.tiles,theme,images,painted:p.stageScripts?.[s.stage.id]?.mapArt}:undefined;},aiCommand:(s,c)=>stageAI(p.stageScripts?.[s.stage.id],s,c),terrain:images[p.game.fallbacks.terrain],background:images[p.game.fallbacks.background],backgroundFor:stageId=>images[p.game.episodes?.find(e=>e.stage===stageId)?.battleBackground??p.game.fallbacks.background],unit:(m,u)=>{const d=unit(m.id,u.side,u.formId);return {icon:images[d.icon??d.art],...(!d.icon?{iconFit:true}:{}),...(!d.icon&&d.iconCrop?{iconCrop:d.iconCrop}:{})};},battle:{...(p.animationArt?{animationArt:packAnimationArt(p,images)}:{}),mech:(m,u)=>{const d=unit(m.id,u.side,u.formId);return {image:images[d.art],height:d.height??335,faces:d.faces??(u.side==='player'?'left':'right'),anchors:d.anchors};},pilot:(pilot,u)=>{const requested=unit(u.mechId,u.side,u.formId).pilotCast;const id=castId(u,pilot);const r=p.cast[id]?.cutin;return {portrait:portrait(id),...(u.id===p.players?.unitId&&values?.().name?{pilot:values().name}:{}),...(p.game.anonymousPilots?.includes(pilot.id)&&requested?{pilot:p.cast[id].name}:{}),...(r?{cutin:{x:r[0],y:r[1],w:r[2],h:r[3]}}:{})};},castId,lineWeapon:id=>p.weapons[id]?.lineSource??id,battleLines:(u,pilot)=>{const generic=p.game.anonymousPilots?.includes(pilot.id)?p.battleDialogue?.defaults?.enemy:undefined;return generic&&!unit(u.mechId,u.side,u.formId).pilotCast?generic:p.cast[castId(u,pilot)]?.battleLines??generic;},text:text=>text.replace(/\{([^{}]+)\}/g,(token,key:string)=>values?.()[p.players?.placeholders?.[key]??'']??token),comboDialogue:id=>p.battleDialogue?.combos?.find(c=>c.binding?.ids.includes(id)),side:u=>u.side==='enemy'?'enemy':'ally',weapon:w=>({...p.weapons[w.id],anim:p.weapons[w.id]?.anim??{template:'heavy-shot'},cutin:p.weapons[w.id]?.cutin??p.weapons[w.id]?.anim.template==='finisher'})},spirit:d=>({name:d.name,...(p.spirits[d.id]??{kind:'focus'})})};
 }
 
 export function visibleContent(pack:Pack,kind:'cast'|'units'|'images'|'scenes',id:string):boolean{return (pack.game.visibility??[]).filter(r=>r[kind]?.includes(id)).every(r=>pack.progressFlag?.(r.flag)===true||pack.progressFlag?.(r.flag)===1);}
+
+const animationLibraries=new WeakMap<object,WeakMap<object,AnimationArt>>();
+export function packAnimationArt(p:Pick<Pack,'animationArt'>,images:Record<string,HTMLImageElement|undefined>):AnimationArt|undefined{if(!p.animationArt)return;let stores=animationLibraries.get(p);if(!stores)animationLibraries.set(p,stores=new WeakMap());let art=stores.get(images);if(!art){art=new AnimationArt(p.animationArt,images);stores.set(images,art);}return art;}

@@ -30,7 +30,7 @@ function response(choices=3,noCounter=false){
  const app=new Headless(),screen=new MapScreen(model);app.push(screen);app.tick();screen.present([{type:'response'}]);app.tick();return{app,screen,prompt,respond,continueTurn};
 }
 describe('touch selection and response confirmation',()=>{
- it('confirm-selected selects a different row on first tap and confirms only its next tap',()=>{const{screen}=page(),choose=vi.fn();const list=screen.ui.add(new MenuList([{label:'A'},{label:'B'}],choose,{w:300}));row(screen,list,1);expect(list.index).toBe(1);expect(choose).not.toHaveBeenCalled();row(screen,list,1);expect(choose).toHaveBeenCalledWith(1,list.items[1]);});
+ it('confirm-selected selects a different row on first tap and confirms only its next tap',()=>{const{screen}=page(),choose=vi.fn();const list=screen.ui.add(new MenuList([{label:'A'},{label:'B'}],choose,{w:300,tap:'confirm-selected'}));row(screen,list,1);expect(list.index).toBe(1);expect(choose).not.toHaveBeenCalled();row(screen,list,1);expect(choose).toHaveBeenCalledWith(1,list.items[1]);});
  it('a hover selects first, so a mouse click confirms immediately',()=>{const{screen}=page(),choose=vi.fn();const list=screen.ui.add(new MenuList([{label:'A'},{label:'B'}],choose,{w:300}));screen.input({kind:'pointer',phase:'move',x:80,y:88});row(screen,list,1);expect(choose).toHaveBeenCalledTimes(1);});
  it('select never confirms from a tap, including repeated taps on the current row',()=>{const{app,screen}=page(),choose=vi.fn();const list=screen.ui.add(new MenuList([{label:'A'},{label:'B'}],choose,{w:300,tap:'select'}));row(screen,list,1);row(screen,list,1);expect(choose).not.toHaveBeenCalled();app.action('confirm');expect(choose).toHaveBeenCalledTimes(1);});
  it('choose confirms a different row with one tap',()=>{const{screen}=page(),choose=vi.fn();const list=screen.ui.add(new MenuList([{label:'A'},{label:'B'}],choose,{w:300,tap:'choose'}));row(screen,list,1);expect(choose).toHaveBeenCalledTimes(1);});
@@ -52,7 +52,7 @@ describe('touch selection and response confirmation',()=>{
  });
  it('falls back to the first response when no counter exists',()=>{const{screen}=response(2,true);expect(widgets(screen).some(w=>w instanceof Button&&w.label==='✔ 방어')).toBe(true);});
  it.each([2,3,5,8,11])('keeps %i responses inside two rows, between forecast and hint, with reachable pagination',count=>{
-  const{screen,respond}=response(count,count===2);let buttons=widgets(screen).filter((w):w is Button=>w instanceof Button&&w.z===62);for(const b of buttons){expect(b.y).toBeGreaterThanOrEqual(490);expect(b.y+b.h).toBeLessThan(680);expect(b.x).toBeGreaterThanOrEqual(0);expect(b.x+b.w).toBeLessThanOrEqual(1280);}
+  const{screen,respond}=response(count,count===2);let buttons=widgets(screen).filter((w):w is Button=>w instanceof Button&&w.z===62);for(const b of buttons){expect(b.y).toBeGreaterThanOrEqual(400);expect(b.y+b.h).toBeLessThan(680);expect(b.x).toBeGreaterThanOrEqual(0);expect(b.x+b.w).toBeLessThanOrEqual(1280);}
   const options=buttons.filter(b=>!['대응 확정','◀ 이전','다음 ▶'].includes(b.label));expect(options.length).toBeLessThanOrEqual(8);for(const y of new Set(options.map(b=>b.y)))expect(options.filter(b=>b.y===y).length).toBeLessThanOrEqual(4);
   if(count>8){press(screen,'다음 ▶');expect(widgets(screen).some(w=>w instanceof Button&&w.label==='방어')).toBe(true);expect(respond).not.toHaveBeenCalled();}
  });

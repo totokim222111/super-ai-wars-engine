@@ -8,7 +8,7 @@ import type { Sound } from './sound';
 import { bigText, cover, type HudState } from './ui';
 
 /** 효과가 일할 곳: 무대, 시간, 소리. 화면(Screen)의 show로 얻는다. 소리는 없어도 된다. */
-export interface Show { stage: Stage; runner: Runner; sound?: Sound }
+export interface Show { flashScale?:number; stage: Stage; runner: Runner; sound?: Sound }
 
 /** 노드를 올리고 play가 끝나면 치운다. 본 흐름은 기다리지 않는다. */
 export function spawn<T extends Node>(show: Show, layer: Layer, node: T, play: (node: T) => Step): T {
@@ -149,10 +149,14 @@ export function* missile(show: Show, from: { x: number; y: number }, via: { x: n
   node.remove();
 }
 
-/** 화면 전체 번쩍임. */
+const flashHistory=new WeakMap<Stage,number[]>();
+/** Single full-screen flash gate: strength 0..1, <=3 rendered frames, <=3 starts/second. */
 export function flash(show: Show, strength = 1, seconds = 0.3, color = '#ffffff'): void {
-  const node = cover(color); node.alpha = strength; node.z = 90;
-  spawn(show, show.stage.ui, node, n => tween(n, { alpha: 0 }, seconds, ease.in));
+  strength*=show.flashScale??.7;
+  if(strength<=0)return;const now=show.runner.elapsed??0,history=(flashHistory.get(show.stage)??[]).filter(t=>now-t<1);
+  if(history.length>=3)return;history.push(now);flashHistory.set(show.stage,history);
+  let frames=0;const node=new Shape({},ctx=>{if(frames++>=3)return;ctx.fillStyle=color;ctx.fillRect(0,0,W,H)});node.alpha=Math.min(.55,strength*.55);node.z=40;
+  spawn(show,show.stage.ui,node,n=>tween(n,{alpha:0},Math.min(3/60,seconds),ease.in));
 }
 
 /** 카메라를 흔든다. 세게 시작해서 잦아든다. */
@@ -226,9 +230,9 @@ export function* drainGauge(show: Show, hud: HudState, what: 'hp' | 'en', to: nu
   const hp = what === 'hp';
   hud.flash = hp ? 1 : 0.45; hud.jolt = hp ? 10 : 3;
   show.sound?.play('gauge', hp ? 1 : 0.6);
-  yield* all(tween(hud, hp ? { hp: to } : { en: to }, 0.24), tween(hud, { flash: 0, jolt: 0 }, 0.5));
-  yield* wait(0.18);
-  yield* tween(hud, hp ? { hpGhost: to } : { enGhost: to }, 0.45, ease.inOut);
+  yield* all(tween(hud, hp ? { hp: to } : { en: to }, 0.24), tween(hud, { flash: 0, jolt: 0 }, 0.24));
+  yield* wait(0.06);
+  yield* tween(hud, hp ? { hpGhost: to } : { enGhost: to }, 0.22, ease.inOut);
 }
 
 /** 화면 위아래 검은 띠. 삽화·컷인처럼 "지금은 보는 장면"일 때 닫는다. */

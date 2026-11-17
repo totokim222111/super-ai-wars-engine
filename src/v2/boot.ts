@@ -38,7 +38,7 @@ export async function boot(canvas:HTMLCanvasElement,gallery=false):Promise<void>
   const work=(task:Promise<void>)=>app.load(task.catch(e=>toast(app.top!,String(e))));
   const home=()=>app.replace(new HomeScreen({images,title:game.title,background:game.titleArt.background,character:game.titleArt.character},index=>work((async()=>{const p=await runtime();await p.ensureGallery?.();const [{openGallery},{buildSample}]=await Promise.all([import('./gallery/screens'),import('./gallery/sample')]);openGallery(index,app,buildSample(images,p));})())),'none');
   const engine=()=>flow??=(async()=>{const p=await runtime(),{startGame}=await import('./game/start');const f=await startGame(app,{images},gallery?home:undefined,p,false,false,bootStorage);Object.assign(window,{gameFlow:f});return f;})().catch(e=>{flow=undefined;throw e;});
-  const initial=await runtime();await initial.ensureStory?.(game.episodes[0].id);await import('./game/start');
+  const initial=await runtime();await initial.ensureStory?.(game.episodes[0].id);await import('./game/start');const {packAnimationArt}=await import('./pack/load');assets.onPrepared=()=>packAnimationArt(initial,images)?.warm();
   const bootReady=Promise.resolve().then(async()=>{await app.loadingScreen.imageReady();if(game.audio.pack)await app.sound.loadPack(assetUrl(mediaPath(game.id,game.audio.base)));await assets.boot((n,total)=>app.progress(n,total));});await bootReady;
   if(gallery)home();else{
     const saved=await hasSave(game.id,bootStorage);

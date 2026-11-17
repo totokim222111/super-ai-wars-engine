@@ -1,3 +1,4 @@
+import {animationSprites} from '../battle/animation-art';
 import type {Pack,UnitDef} from './load';
 import {packUnit} from './load';
 import {configOf} from '../rules/config';
@@ -17,13 +18,14 @@ export function assetPlan(p:Pack):{boot:AssetGroup;stages:Record<string,AssetGro
  const video=(g:Group,id:string)=>{const v=p.game.cinematics?.videos[id];if(v?.file)g.videos.add(v.file);image(g,v?.fallback);};
  const cue=(g:Group,c:Cue)=>{if(c.do==='video')video(g,c.id);if('who'in c)cast(g,c.who);if(c.do==='bg'||c.do==='cg')image(g,c.image);if(c.do==='music')audio(g,c.id);if(c.do==='typed')cue(g,c.cue);if(c.do==='choice')c.choices.forEach(ch=>ch.effects.forEach(c=>cue(g,c)));};
  const walk=(g:Group,value:unknown)=>{if(typeof value==='string')image(g,value);else if(Array.isArray(value))value.forEach(x=>walk(g,x));else if(value&&typeof value==='object')Object.values(value).forEach(x=>walk(g,x));};
- const finish=(g:Group):AssetGroup=>({images:[...g.images].sort(),audio:[...g.audio].sort(),videos:[...g.videos].sort(),files:[]});
+ const optional=[...new Set(animationSprites(p.animationArt).map(([,s])=>art[s.art]).filter(Boolean))];
+ const finish=(g:Group):AssetGroup=>({...optional.some(path=>g.images.has(path))?{optionalImages:optional.filter(path=>g.images.has(path))}:{},images:[...g.images].sort(),audio:[...g.audio].sort(),videos:[...g.videos].sort(),files:[]});
  const boot=group();image(boot,p.game.titleArt.background);image(boot,p.game.titleArt.character);audio(boot,p.game.music.title);
  if(p.game.cinematics?.opening)video(boot,p.game.cinematics.opening.id);
  const first=p.game.episodes[0];for(const c of p.stories[first?.id]?.scenes['도입']??[])cue(boot,c);audio(boot,first&&p.stories[first.id]?storyMusic(p.stories[first.id],'도입',first.id,p.game.music,p.game.musicRules):p.game.music.map);
  const stages:Record<string,AssetGroup>={};
  for(const [index,ep]of p.game.episodes.entries()){
-  const g=group(),stage=p.campaign.stages[ep.stage]?.stage;
+  const g=group();for(const [,sprite]of animationSprites(p.animationArt))image(g,sprite.art);const stage=p.campaign.stages[ep.stage]?.stage;
   if(stage)for(const u of definitions(stage)){unit(g,u.mechId,u.side==='player'?'player':'enemy');const pilot=p.rules.pilots.find(p=>p.id===u.pilotId),id=p.game.pilotCasts?.[u.pilotId]??pilot?.character??'',c=p.cast[id];cast(g,id);audio(g,unitTheme({content:p.rules} as Parameters<typeof unitTheme>[0],u as Parameters<typeof unitTheme>[1],p.game.music,p.game.musicRules,()=>u.side==='enemy'&&c?.enemyTheme?{theme:c.enemyTheme,priority:c.enemyThemePriority}:c?.theme?{theme:c.theme,priority:c.themePriority}:undefined)?.theme);}
   if(stage)for(const u of definitions(stage)){const mech={...p.rules.mechs.find(m=>m.id===u.mechId),...stage.contentOverrides?.mechs?.[u.mechId]};for(const id of [...mech.weapons??[],...mech.forms?.flatMap(f=>f.overrides.weapons??[])??[]]){const v=p.weapons[id]?.video;if(v)video(g,v);}}
   if(stage)for(const c of configOf(stage).combos){const v=p.weapons[c.weapon]?.video;if(v)video(g,v);}

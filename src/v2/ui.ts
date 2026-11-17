@@ -1,3 +1,5 @@
+import {largeUi,readable} from './presentation';
+
 import { drawPortrait, faceOf, type Portrait } from './portrait';
 export { faceOf, drawPortrait, type Portrait, type Rect } from './portrait';
 import { term } from './terms';
@@ -74,23 +76,23 @@ export function drawFace(ctx: Ctx, portrait: Portrait, mood: string, x: number, 
   drawPortrait(ctx, portrait, mood, portrait.crop, x, y, size, size);
 }
 
-export interface LineState { name: string; text: string; shown: number; color: string }
+export interface LineState { compact?:boolean; name: string; text: string; shown: number; color: string }
 
 /** 대화 장면의 대사창. 화면 아래 넓게 깔리고 이름표가 왼쪽 위에 얹힌다. */
 export function storyLine(state: LineState): Shape<LineState> {
   return new Shape(state, (ctx, s) => {
-    const x = 110, w = W - 220, h = 186, y = H - 26 - h;
-    panel(ctx, x, y, w, h, s.color);
+    const x=largeUi()?40:110,w=largeUi()?1080:W-220,h=s.compact?112:186,y=H-26-h;
+    panel(ctx,x,y,w,h,s.color);
     if (s.name) {
-      ctx.font = `30px ${FONT.display}`;
+      ctx.font = `${readable(30)}px ${FONT.display}`;
       const nameWidth = ctx.measureText(s.name).width + 70;
-      plate(ctx, x + 22, y - 26, nameWidth, 46, s.color, 'right');
+      if(!s.compact)plate(ctx, x + 22, y - 26, nameWidth, 46, s.color, 'right');
       ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(s.name, x + 46, y - 1);
+      ctx.fillText(s.name,x+46,s.compact?y+18:y-1);
     }
-    ctx.font = `500 29px ${FONT.body}`; ctx.textBaseline = 'top'; ctx.fillStyle = COLOR.ink;
+    ctx.font = `500 ${readable(s.compact?24:29)}px ${FONT.body}`; ctx.textBaseline = 'top'; ctx.fillStyle = COLOR.ink;
     ctx.shadowColor = '#000'; ctx.shadowOffsetY = 2;
-    typed(ctx, wrap(ctx, s.text, w - 88), s.shown, x + 44, y + 44, 44, 'left');
+    typed(ctx, wrap(ctx, s.text, w - 88), s.shown, x + 44, y+42,s.compact?30:44,'left');
     ctx.shadowColor = 'transparent';
     if (s.shown >= s.text.length) {
       // 다 나왔으면 "누르면 다음" 표시
@@ -105,13 +107,13 @@ export type BattleLineState = LineState & { side: Side; portrait: Portrait; mood
 export function battleLine(state: BattleLineState): Shape<BattleLineState> {
   return new Shape(state, (ctx, s) => {
     const x = 16, w = W - 32, h = 128, y = H - 14 - h, right = s.side === 'right';
-    panel(ctx, x, y, w, h, s.color);
+    panel(ctx,x,y,w,h,s.color);
     drawFace(ctx, s.portrait, s.mood, right ? x + w - 126 : x, y + 2, 126);
     const tx = right ? x + w - 150 : x + 150;
     ctx.textBaseline = 'top'; ctx.textAlign = right ? 'right' : 'left';
-    ctx.font = `24px ${FONT.display}`; ctx.fillStyle = s.color === COLOR.enemy ? '#ff9aa5' : '#8cc2ff';
+    ctx.font = `${readable(24)}px ${FONT.display}`; ctx.fillStyle = s.color === COLOR.enemy ? '#ff9aa5' : '#8cc2ff';
     ctx.fillText(s.name, tx, y + 14);
-    let size=27;ctx.font=`500 ${size}px ${FONT.body}`;while(size>18&&wrap(ctx,s.text,w-330).length>2){size--;ctx.font=`500 ${size}px ${FONT.body}`;}ctx.fillStyle=COLOR.ink;
+    let size=27;ctx.font=`500 ${size}px ${FONT.body}`;while(size>readable(18)&&wrap(ctx,s.text,w-330).length>2){size--;ctx.font=`500 ${size}px ${FONT.body}`;}ctx.fillStyle=COLOR.ink;
     typed(ctx,wrap(ctx,s.text,w-330),s.shown,tx,y+48,Math.min(38,size+8),right?'right':'left');
   });
 }
@@ -166,7 +168,7 @@ export const EN_TONES = ['#c4f8ff', '#22c8e6', '#0a5a80'] as const;
 /** 테두리가 있어 어떤 배경에서도 읽히는 숫자. 현재값은 크게, 최대값은 작게. 오른쪽 끝이 x다. */
 function statNumber(ctx: Ctx, value: number, max: number, x: number, y: number, size: number): void {
   ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
-  ctx.font = `700 ${Math.round(size * 0.6)}px ${FONT.num}`;
+  ctx.font = `700 ${readable(Math.round(size * 0.6))}px ${FONT.num}`;
   const tail = ` / ${max}`, tailWidth = ctx.measureText(tail).width;
   ctx.lineWidth = 3; ctx.strokeStyle = '#040816'; ctx.strokeText(tail, x, y);
   ctx.fillStyle = COLOR.dim; ctx.fillText(tail, x, y);
@@ -193,40 +195,40 @@ export function unitHud(state: HudState): Shape<HudState> {
   return new Shape(state, (ctx, s) => {
     const w = 560, h = 106, x = s.side === 'left' ? 16 : W - 16 - w, y = 12, now = performance.now();
     if (s.jolt > 0.1) ctx.translate(Math.sin(now / 11) * s.jolt, Math.cos(now / 7) * s.jolt * 0.6);
-    panel(ctx, x, y, w, h, s.color);
+    panel(ctx,x,y,w,h,s.color);ctx.save();ctx.globalAlpha=.25;ctx.fillStyle=s.side==='left'?'#5a0b18':'#0b2a80';ctx.fillRect(x+2,y+2,w-4,h-4);ctx.restore();if(s.flash>.01){ctx.strokeStyle=s.color;ctx.lineWidth=3;ctx.strokeRect(x+2,y+2,w-4,h-4);}
     ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-    ctx.font = `900 23px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.fillText(s.name, x + 24, y + 9);
+    ctx.font = `900 ${readable(23)}px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.fillText(s.name, x + 24, y + 9);
     // 무인기처럼 파일럿 이름이 기체 이름과 같으면 한 번만 쓴다.
-    ctx.textAlign = 'right'; ctx.font = `500 15px ${FONT.body}`; ctx.fillStyle = COLOR.dim;
+    ctx.textAlign = 'right'; ctx.font = `500 ${largeUi()?22:15}px ${FONT.body}`; ctx.fillStyle = COLOR.dim;
     if (s.pilot !== s.name) ctx.fillText(s.pilot, x + w - 24, y + 15);
-    const hp = Math.max(0, Math.round(s.hp)), en = Math.max(0, Math.round(s.en)), left = x + 92, barWidth = 286;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `700 16px ${FONT.num}`;
+    const hp = Math.max(0, Math.round(s.hp)), en = Math.max(0, Math.round(s.en)), left = x + 92;ctx.font=`700 ${largeUi()?32:hp>=100000?24:27}px ${FONT.num}`;const numberWidth=ctx.measureText(largeUi()?String(hp):`${hp} / ${s.hpMax}`).width,barWidth=Math.min(286,w-22-numberWidth-12-92);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `700 ${largeUi()?22:16}px ${FONT.num}`;
     ctx.fillStyle = COLOR.gold; ctx.fillText('HP', x + 24, y + 54);
     ctx.fillStyle = '#7fe9f7'; ctx.fillText(term('en'), x + 24, y + 84);
     gauge(ctx, left, y + 45, barWidth, 18, s.hp, s.hpGhost, s.hpMax, hpTones(hp / s.hpMax));
     gauge(ctx, left, y + 79, barWidth, 11, s.en, s.enGhost, s.enMax, EN_TONES);
-    statNumber(ctx, hp, s.hpMax, x + w - 22, y + 64, 27);
-    statNumber(ctx, en, s.enMax, x + w - 22, y + 92, 19);
-    if (s.flash > 0.01) { ctx.globalAlpha *= s.flash * 0.55; ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, w, h); }
+    if(largeUi()){ctx.textAlign='right';ctx.font=`700 ${readable(32)}px ${FONT.num}`;ctx.fillStyle=COLOR.ink;ctx.fillText(String(hp),x+w-22,72);}else statNumber(ctx,hp,s.hpMax,x+w-22,y+64,hp>=100000?24:27);
+    if(largeUi()){ctx.textAlign='right';ctx.font=`700 ${readable(22)}px ${FONT.num}`;ctx.fillStyle=COLOR.ink;ctx.fillText(String(en),x+w-22,104);}else statNumber(ctx,en,s.enMax,x+w-22,y+92,19);
+    
   });
 }
 
 /** 무기 이름 띠. 노드의 x가 띠의 바깥쪽 끝이다. */
 export function weaponPlate(text: string, color: string, side: Side): Shape<{ text: string }> {
   return new Shape({ text }, (ctx, s) => {
-    ctx.font = `30px ${FONT.display}`;
-    const w = ctx.measureText(s.text).width + 84, h = 50, x = side === 'right' ? -w : 0;
+    ctx.font = `${readable(30)}px ${FONT.display}`;
+    let size=30;while(size>22&&ctx.measureText(s.text).width+84>460)ctx.font=`${--size}px ${FONT.display}`;const w=Math.min(460,ctx.measureText(s.text).width+84),h=50,x=side==='right'?-w:0;
     const fill = ctx.createLinearGradient(x, 0, x + w, 0);
     fill.addColorStop(side === 'right' ? 0 : 1, '#06112e'); fill.addColorStop(side === 'right' ? 1 : 0, color);
     ctx.save(); plate(ctx, x, 0, w, h, '#000', side === 'right' ? 'left' : 'right'); ctx.clip(); ctx.fillStyle = fill; ctx.fillRect(x, 0, w, h); ctx.restore();
-    ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(s.text, x + w / 2, h / 2 + 2);
+    ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(s.text,x+w/2,h/2+2,w-36);
   });
 }
 
 /** 화면 왼쪽 위의 장소 표시. 지문으로 쓰던 "장면: ○○"을 대신한다. */
 export function placeChip(text: string): Shape<{ text: string }> {
   return new Shape({ text }, (ctx, s) => {
-    ctx.font = `700 20px ${FONT.body}`;
+    ctx.font = `700 ${readable(20)}px ${FONT.body}`;
     const w = ctx.measureText(s.text).width + 62;
     plate(ctx, 0, 0, w, 40, 'rgba(7,11,26,.82)', 'right');
     ctx.fillStyle = COLOR.gold; ctx.fillRect(0, 0, 6, 40);
@@ -238,11 +240,11 @@ export function placeChip(text: string): Shape<{ text: string }> {
 /** A small two-line card for quiet CGs. Never receives a scene description. */
 export function quietCgCard(name:string,title:string,color:string):Shape<{name:string;title:string}> {
   return new Shape({name,title},(ctx,s)=>{
-    ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`24px ${FONT.body}`;
+    ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`${readable(24)}px ${FONT.body}`;
     const width=Math.min(W-84,Math.max(ctx.measureText(s.title).width,ctx.measureText(s.name).width)+36);
     ctx.fillStyle='rgba(5,12,29,.72)';ctx.fillRect(0,0,width,82);
-    ctx.fillStyle=color;ctx.font=`20px ${FONT.body}`;ctx.fillText(s.name,18,24,width-36);
-    ctx.font=`24px ${FONT.body}`;ctx.fillText(s.title,18,56,width-36);
+    ctx.fillStyle=color;ctx.font=`${readable(20)}px ${FONT.body}`;ctx.fillText(s.name,18,24,width-36);
+    ctx.font=`${readable(24)}px ${FONT.body}`;ctx.fillText(s.title,18,56,width-36);
   });
 }
 export function nameCard(name: string, sub: string, color: string, maxWidth=W-80): Shape<{ name: string; sub: string }> {
@@ -254,7 +256,7 @@ export function nameCard(name: string, sub: string, color: string, maxWidth=W-80
     ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     ctx.fillStyle = '#06112e'; ctx.fillText(s.name, 56, 73,maxWidth-112);
     ctx.fillStyle = '#fff'; ctx.fillText(s.name, 56, 68,maxWidth-112);
-    ctx.font = `700 24px ${FONT.body}`;
+    ctx.font = `700 ${readable(24)}px ${FONT.body}`;
     const subWidth = Math.min(maxWidth-56,ctx.measureText(s.sub).width + 46);
     ctx.fillStyle = '#06112e'; ctx.fillRect(56, 138, subWidth, 42);
     ctx.fillStyle = COLOR.gold; ctx.fillRect(56, 138, 6, 42);

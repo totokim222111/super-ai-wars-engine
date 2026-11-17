@@ -80,9 +80,9 @@ describe('brief presentation and skip continuation',()=>{
    expect(fullyShown/60).toBeGreaterThanOrEqual(.6);expect(show.runner.busy).toBe(false);
   }
  });
- it('uses the same brief path for animations off and fast enemy-phase playback; a tap accelerates remaining steps',()=>{
+ it('uses the same brief path for animations off and explicitly brief enemy-phase playback; a tap accelerates remaining steps',()=>{
   const lookup:MapLookup={...{unit:()=>({}),spirit:d=>({name:d.name,kind:'focus'})},battle:base};
-  for(const animation of ['off','on'] as const){const model=new CoreMap(m6(),lookup),app=new Headless(),screen=new MapScreen(model,{battle:()=>({animation,speed:animation==='off'?1:3,shake:0})});app.push(screen);app.tick(120);
+  for(const animation of ['off','on'] as const){const model=new CoreMap(m6(),lookup),app=new Headless(),screen=new MapScreen(model,{battle:()=>({animation,speed:animation==='off'?1:3,shake:0,enemyBattle:'brief'})});app.push(screen);app.tick(120);
    const ex=exchange();if(animation==='on'){ex.fighters[0].side='enemy';ex.fighters[1].side='ally';}ex.fighters=ex.fighters.map((f,i)=>({...f,id:['p1','e1','p2','e2'][i]}));ex.strikes=[strike('p1','e1',10)];screen.present([{type:'battle',exchange:ex}]);
    for(let i=0;i<120&&!(screen as unknown as {brief?:BriefControl}).brief;i++)app.tick();expect(app.top).toBe(screen);expect((screen as unknown as {brief?:BriefControl}).brief).toBeDefined();screen.input({kind:'pointer',phase:'down',x:20,y:20});expect((screen as unknown as {brief?:BriefControl}).brief?.fast).toBe(true);app.tick(240);expect(app.top).toBe(screen);
   }

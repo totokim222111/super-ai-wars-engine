@@ -15,6 +15,7 @@ export const sameCell = (a: Cell, b: Cell): boolean => a.col === b.col && a.row 
 
 /** 맵 위의 기체 하나. 화면이 보여 주는 데 필요한 것만 담는다. */
 export interface UnitView {
+    level?:number;
   actionsRemaining?:number;actionsMax?:number;
   revealed?:boolean;
   id: string;

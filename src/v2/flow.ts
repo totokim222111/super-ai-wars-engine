@@ -62,6 +62,8 @@ export function* until(done: () => boolean): Step {
 /** 스텝들을 프레임마다 돌리는 실행기. speed를 올리면 전체가 빨리 감긴다. */
 export class Runner {
   speed = 1;
+  /** Unscaled visual clock, including hit-stop; used for bounded screen flashes. */
+  elapsed = 0;
   private tasks: Step[] = [];
   private held = 0;
   /**
@@ -72,6 +74,7 @@ export class Runner {
   /** 스텝을 시작한다. 본 흐름과 따로 도는 효과(파편, 잔상)도 이걸로 띄운다. */
   run(step: Step): void { if (!step.next(0).done) this.tasks.push(step); }
   update(dt: number): void {
+    this.elapsed += Math.max(0,dt);
     let scaled = dt * this.speed;
     if (this.held > 0) { this.held -= scaled; scaled = 0; }
     const current = this.tasks;
@@ -80,5 +83,5 @@ export class Runner {
     for (const task of current) if (!task.next(scaled).done) this.tasks.push(task);
   }
   get busy(): boolean { return this.tasks.length > 0; }
-  clear(): void { this.tasks = []; this.held = 0; }
+  clear(): void { const current=this.tasks;this.tasks=[];this.held=0;for(const task of current)task.return(); }
 }

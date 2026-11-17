@@ -38,7 +38,7 @@ describe('ordered map movement and live resource presentation',()=>{
   const frames=(speed:number)=>{const f=setup(),b=f.p.board,from=b.unit('e1')!.cell,g=b.moveAlong('e1',[from,{col:4,row:2},{col:5,row:2},{col:6,row:2}],speed);let count=0,r=g.next();while(!r.done&&count<200){r=g.next(1/120);count++;}expect(b.unit('e1')!.cell).toEqual({col:6,row:2});return count;};expect(frames(3)).toBeLessThan(frames(1));
  });
  it('preserves the tentative player origin so Escape still cancels a preview move',()=>{
-  const f=setup(),u=f.p.board.unit('p1')!,origin={...u.cell};f.p.goTo(u,{col:2,row:2});f.app.tick(100);expect(f.p.board.unit('p1')!.cell).toEqual({col:2,row:2});f.p.back();expect(f.p.board.unit('p1')!.cell).toEqual(origin);expect(f.model.units().find(u=>u.id==='p1')!.cell).toEqual(origin);
+    const f=setup(),u=f.p.board.unit('p1')!,origin={...u.cell};f.p.goTo(u,{col:2,row:2});f.app.tick(100);expect(f.p.board.unit('p1')!.cell).toEqual({col:2,row:2});f.p.back();if((f.screen as any).mode.kind==='command')f.p.back();expect(f.p.board.unit('p1')!.cell).toEqual(origin);expect(f.model.units().find(u=>u.id==='p1')!.cell).toEqual(origin);
  });
  it('does not mutate retained spawn/initial snapshots when its displayed HP changes',()=>{
   const f=setup(),view={...f.model.units()[0],id:'fresh',cell:{col:7,row:5}},hp=view.hp;f.screen.run(f.p.board.spawn(view));f.app.tick(100);f.p.board.harm('fresh',300);expect(view.hp).toBe(hp);expect(f.p.board.unit('fresh')!.hp).toBe(hp-300);

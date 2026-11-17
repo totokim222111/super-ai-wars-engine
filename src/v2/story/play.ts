@@ -1,8 +1,11 @@
+import {largeUi,uiMetrics} from '../presentation';
+import {Shape} from '../stage';
+import {FONT,COLOR,wrap} from '../ui';
 import { preloadImages } from '../pack/images';
 import { sceneImages, waitForImages,waitForAudio,sceneAudio } from '../pack/preload';
 import { Director, Taps, type Actor, type Cue } from '../director';
 import { until, wait, type Step } from '../flow';
-import { Button, MenuList, label, windowFrame, toast } from '../kit';
+import { Button, MenuList, label, toast,windowFrame } from '../kit';
 import { Screen } from '../screen';
 import type { InputEvent } from '../input';
 import type { Board } from '../map/board';
@@ -10,6 +13,7 @@ import { burst } from '../fx';
 import type { UnitView } from '../map/model';
 import type { Condition, Story, Value } from './parse';
 export interface StoryState {
+    speakerName?:(id:string)=>string|undefined;
     type: () => string;
     actor?:(id:string)=>string;
     candidates?:{id:string;flag?:string}[];
@@ -41,11 +45,13 @@ export function testCondition(c: Condition, s: StoryState): boolean { const a = 
     case '>': return a > b;
     case '<': return a < b;
 } }
-class LogScreen extends Screen {
-    opaque = false;
-    constructor(private readonly lines: string[]) { super(); }
-    enter(): void { this.stage.ui.add(Object.assign(windowFrame('지난 대사', 1120, 570), { x: 80, y: 95 })); this.ui.setNavigation({kind:'close',bounds:{x:80,y:95,w:1120,h:570},onBack:()=>this.app.pop('none')}); this.ui.add(Object.assign(new MenuList(this.lines.flatMap((s, i) => { const chars = Array.from(s), items = []; while (chars.length)
-        items.push({ label: String(i + 1), description: chars.splice(0, 76).join(''), labelSize: 20 }); return items; }), () => undefined, { w: 1060, rows: 4, rowHeight: 90 }), { x: 110, y: 207 })); }
+export function logEntries(lines:string[]){return lines.map(line=>{const at=line.indexOf(':');return{speaker:at<0?'':line.slice(0,at),text:at<0?line:line.slice(at+1).trimStart()};});}
+export class LogScreen extends Screen{
+ opaque=true;private scroll=0;private contentHeight=0;private previous?:Button;private next?:Button;
+ constructor(private readonly lines:string[]){super();}
+ enter():void{this.stage.ui.add(Object.assign(windowFrame('지난 대사',1180,600,{inside:true}),{x:50,y:80,z:1}));this.stage.ui.add(new Shape({},ctx=>{ctx.fillStyle='#071125';ctx.fillRect(50,80,1180,600);ctx.textBaseline='top';ctx.textAlign='left';ctx.save();ctx.beginPath();ctx.rect(80,185,1120,430);ctx.clip();let y=195-this.scroll;for(const entry of logEntries(this.lines)){ctx.font=`700 ${largeUi()?22:18}px ${FONT.body}`;ctx.fillStyle=COLOR.gold;ctx.fillText(entry.speaker,92,y,1070);ctx.font=`500 ${largeUi()?24:18}px ${FONT.body}`;ctx.fillStyle=COLOR.ink;const lines=wrap(ctx,entry.text,1070);lines.forEach((text,i)=>ctx.fillText(text,92,y+34+i*(largeUi()?36:27)));y+=46+lines.length*(largeUi()?36:27)+12;}this.contentHeight=y+this.scroll-195;ctx.restore();}));this.ui.setNavigation({kind:'close',bounds:{x:50,y:80,w:1180,h:600},onBack:()=>this.app.pop('none')});this.previous=this.ui.add(Object.assign(new Button('▲ 이전',()=>this.move(-240),{w:200,h:uiMetrics().button}),{x:80,y:624}));this.next=this.ui.add(Object.assign(new Button('다음 ▼',()=>this.move(240),{w:200,h:uiMetrics().button}),{x:304,y:624}));this.previous.enabled=false;this.ui.focusOn(this.next,true);}
+ private move(delta:number){this.scroll=Math.max(0,Math.min(Math.max(0,this.contentHeight-410),this.scroll+delta));if(this.previous)this.previous.enabled=this.scroll>0;if(this.next)this.next.enabled=this.scroll<Math.max(0,this.contentHeight-410);}
+ input(e:InputEvent):void{if(e.kind==='action'&&(e.action==='up'||e.action==='down')){this.move(e.action==='up'?-100:100);return;}super.input(e);}
 }
 /** 같은 재생기를 독립 화면과 맵 위에서 쓴다. 규칙 상태는 주입받는다. */
 /**
@@ -85,9 +91,9 @@ export class StoryPlayback {
     private session = 0;
     private controls: Button[] = [];
     private choiceList?: MenuList;
-    constructor(readonly screen: Screen, readonly cast: Record<string, Actor>, readonly images: Record<string, HTMLImageElement | undefined>, readonly state: StoryState, readonly board?: Board, private readonly units?: () => UnitView[]) { this.director = new Director(screen.show, cast, images, this.taps, c => this.extra(c));this.director.onLineVisible=visible=>this.controls.forEach(b=>b.visible=visible); }
+    constructor(readonly screen: Screen, readonly cast: Record<string, Actor>, readonly images: Record<string, HTMLImageElement | undefined>, readonly state: StoryState, readonly board?: Board, private readonly units?: () => UnitView[]) { this.cast=Object.fromEntries(Object.entries(cast).map(([id,c])=>[id,{...c,name:state.speakerName?.(id)??c.name}]));this.director = new Director(screen.show, this.cast, images, this.taps, c => this.extra(c));this.director.onLineVisible=visible=>this.controls.forEach(b=>b.visible=visible); }
     input(event: InputEvent): boolean { if (!this.active)
-        return false; if (this.screen.ui.input(event, this.choiceList ? [this.choiceList, ...this.controls] : this.controls))
+        return false;if(event.kind==='action'&&event.action==='skip'){this.skip=!this.skip;if(this.controls[1]){this.controls[1].label=this.skip?'SKIP 중':'SKIP';this.controls[1].toggled=this.skip;}return true;}if(event.kind==='action'&&(event.action==='auto'||event.key?.toLowerCase()==='a')){this.auto=!this.auto;if(this.controls[0])this.controls[0].label=this.auto?'AUTO ✓':'AUTO';return true;}if(event.kind==='action'&&event.action==='log'){this.screen.app.push(new LogScreen(this.log),'none');return true;} if (this.screen.ui.input(event, this.choiceList ? [this.choiceList, ...this.controls] : this.controls))
         return true; if (!this.choosing && ((event.kind === 'pointer' && event.phase === 'up') || (event.kind === 'action' && event.action === 'confirm')))
         {if(this.controls.some(c=>c.visible))this.screen.app.sound.play('confirm',.5);this.taps.press();} return true; }
     private *extra(c: Cue): Step {
@@ -119,20 +125,19 @@ export class StoryPlayback {
                 if (c.amount) toast(this.screen, `${this.director.nameOf(c.who)} 호감 ${c.amount > 0 ? '+' : ''}${c.amount}`);
                 break;
             case 'choice': {
-                this.director.clearLine();
-                this.choosing = true;
-                this.controls.forEach(b => b.y = 600);
+                this.choosing = true;this.director.dimLine(.45);
+                this.controls.forEach(b=>b.visible=false);
                 let selected = -1;
                 const choices = storyChoices(c.choices, this.state);
                 const items = choices.map(x => ({ sound:'important' as const, label: x.text, wrapLabel: true, labelSize: 21 }));
-                const list = this.screen.ui.add(Object.assign(new MenuList(items, i => { selected = i; }, { w: 1040, rows: 3, rowHeight: 94 }), { x: 120, y: 175, z: 80 }));
+                const list = this.screen.ui.add(Object.assign(new MenuList(items, i => { selected = i; }, {w:1040,rows:3,rowHeight:84,maxHeight:272}), { x: 120, y: 300, z: 80 }));
                 this.choiceList = list;
                 this.screen.ui.focusOn(list, true);
                 yield* until(() => selected >= 0);
                 this.screen.ui.remove(list);
                 this.choiceList = undefined;
-                this.choosing = false;
-                this.controls.forEach(b => b.y = 516);   // 대사창 안 오른쪽 위: 인물을 가리지 않는다
+                this.choosing = false;this.director.dimLine(1);
+                this.controls.forEach((b,i)=>{b.y=largeUi()?400+i*100:414;});   // 대사창 안 오른쪽 위: 인물을 가리지 않는다
                 const choice = choices[selected];
                 const flag = choice.effects.find(e => e.do === 'variable' && /-\d+$/.test(e.name));
                 if (flag?.do === 'variable')
@@ -199,7 +204,7 @@ export class StoryPlayback {
         yield* this.director.perform({ ...c, who });
         return;
     }
-    if(['bg','dark','title','place','cg','choice'].includes(c.do))this.director.clearLine();
+    if(['bg','dark','title','place','cg'].includes(c.do))this.director.clearLine();
     // 삽화가 떠 있는 동안 AUTO·SKIP·LOG 버튼이 그림을 가리지 않게 숨긴다.
     if (c.do === 'cg') { for (const b of this.controls) b.visible = false; try { yield* this.director.perform(c); } finally { for (const b of this.controls) b.visible = false; } return; }
     yield* this.director.perform(c); }
@@ -213,14 +218,14 @@ export class StoryPlayback {
         this.active = true;
         try {
         this.ended = false;
-        const auto = this.screen.ui.add(Object.assign(new Button('AUTO', () => { this.auto = !this.auto; auto.label = this.auto ? 'AUTO ✓' : 'AUTO'; }, { w: 96, h: 32 }), { x: 866, y: 516, z: 90, canFocus: false }));
-        const skip = this.screen.ui.add(Object.assign(new Button('SKIP', () => { this.skip = !this.skip; skip.label = this.skip ? 'SKIP ✓' : 'SKIP'; }, { w: 96, h: 32 }), { x: 970, y: 516, z: 90, canFocus: false }));
-        const log = this.screen.ui.add(Object.assign(new Button('LOG', () => this.screen.app.push(new LogScreen(this.log), 'none'), { w: 96, h: 32 }), { x: 1074, y: 516, z: 90, canFocus: false }));
-        auto.label=this.auto?'AUTO ✓':'AUTO';skip.label=this.skip?'SKIP ✓':'SKIP';this.controls = [auto, skip, log];this.controls.forEach(b=>b.visible=false);
+        const auto = this.screen.ui.add(Object.assign(new Button('AUTO', () => { this.auto = !this.auto; auto.label=this.auto?'AUTO ✓':'AUTO'; }, { w: 124, h: 82 }), { x: 850, y: 414, z: 90, canFocus: false }));
+        const skip = this.screen.ui.add(Object.assign(new Button('SKIP', () => { this.skip = !this.skip; skip.label=this.skip?'SKIP 중':'SKIP';skip.toggled=this.skip; }, { w: 124, h: 82 }), { x: 980, y: 414, z: 90, canFocus: false }));
+        const log = this.screen.ui.add(Object.assign(new Button('LOG', () => this.screen.app.push(new LogScreen(this.log), 'none'), { w: 124, h: 82 }), { x: 1110, y: 414, z: 90, canFocus: false }));
+        auto.label=this.auto?'AUTO ✓':'AUTO';skip.label=this.skip?'SKIP 중':'SKIP';skip.toggled=this.skip;if(largeUi()){[auto,skip,log].forEach((b,i)=>{b.x=1144;b.y=400+i*100;b.w=112;b.h=84;});}else{auto.label+=' [A]';skip.label+=' [Ctrl]';log.label+=' [L]';}this.controls = [auto, skip, log];this.controls.forEach(b=>b.visible=false);
         const self = this, session = ++this.session;
         this.screen.run((function* (): Step { while (self.active && self.session === session) {
-            yield* wait(self.skip ? .06 : 1.8);
-            if (self.session === session && !self.choosing && (self.skip || self.auto))
+            yield* wait(self.skip||self.screen.app.fastHeld ? .06 : 1.8);
+            if (self.session === session && !self.choosing && (self.skip||self.screen.app.fastHeld||self.auto))
                 self.taps.press();
         } })());
         let current = scene, budget = 10000;

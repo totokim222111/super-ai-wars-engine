@@ -1,3 +1,4 @@
+import {packAnimationArt} from '../pack/load';
 import {configureImageFocus} from '../image-layout';
 /** Presentation examples are data belonging to the selected pack. */
 import {visibleContent,castPortrait,packActors,type Pack} from '../pack/load';
@@ -16,5 +17,5 @@ export function buildSample(images:Images,pack:Pack):Sample{
  const gallery=filter(typeof pack.game.gallery==='object'?pack.game.gallery:{})as GalleryData,roles=gallery.roles??{},cast=pack.cast,actors=packActors(pack,images),lead=gallery.fighters?.find(f=>f.id===roles.ally)??gallery.fighters?.[0],empty:Portrait={faces:{},crop:{x:0,y:0,w:1,h:1}};
  return {images,pack,gallery,roles,cast:actors,leadPortrait:lead&&cast[lead.cast]?castPortrait(cast[lead.cast],images):empty,
  faces:(gallery.cast??Object.keys(cast)).filter(id=>actors[id]&&!cast[id].voiceOnly&&visibleContent(pack,'cast',id)).map(id=>({name:cast[id].name,faces:actors[id].faces??{},moodNames:cast[id].moodNames,moodSheet:actors[id].moodSheet,square:id===roles.enemy})),
- exchange:(strikes,enemyHp,allyEnergy)=>({background:images[roles.battleBackground??pack.game.fallbacks.background],fighters:(gallery.fighters??[]).map(f=>({...f,image:images[f.art],portrait:cast[f.cast]?castPortrait(cast[f.cast],images):empty,anchors:Object.values(pack.units).find(u=>u.art===f.art)?.anchors,hp:f.id===roles.enemy&&enemyHp!==undefined?enemyHp:f.hp,en:f.id===roles.ally&&allyEnergy!==undefined?allyEnergy:f.en}))as Fighter[],strikes})};
+ exchange:(strikes,enemyHp,allyEnergy)=>({...pack.animationArt?{animationArt:packAnimationArt(pack,images)}:{},background:images[roles.battleBackground??pack.game.fallbacks.background],fighters:(gallery.fighters??[]).map(f=>({...f,image:images[f.art],portrait:cast[f.cast]?castPortrait(cast[f.cast],images):empty,anchors:Object.values(pack.units).find(u=>u.art===f.art)?.anchors,hp:f.id===roles.enemy&&enemyHp!==undefined?enemyHp:f.hp,en:f.id===roles.ally&&allyEnergy!==undefined?allyEnergy:f.en}))as Fighter[],strikes})};
 }

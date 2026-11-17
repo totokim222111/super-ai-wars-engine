@@ -1,6 +1,7 @@
 import {LoadingScreen,LoadingTransition,type LoadingBoundary} from './loading-screen';
 import {reducedMotion} from '../platform/settings';
 import { preloadImages } from './pack/images';
+import {resolveUiSize} from './presentation';
 /**
  * 화면과 앱.
  *
@@ -22,6 +23,9 @@ import { Surface } from './surface';
 export type Transition = 'fade' | 'none';
 
 export abstract class Screen {
+  private layoutStage?:'normal'|'large';
+  responsiveMenu():void{this.layoutStage=resolveUiSize();}
+  reflowMenu():void{if(!this.layoutStage||this.layoutStage===resolveUiSize())return;this.ui.clear();this.stage.clear();this.runner.clear();this.enter();}
   readonly stage = new Stage();
   readonly runner = new Runner();
   readonly ui = new Ui(this);
@@ -31,7 +35,7 @@ export abstract class Screen {
   /** 이 화면의 음악(소리 팩의 bgm 이름). 비워 두면 앞 화면의 음악이 이어지고, null이면 음악을 끈다. */
   music?: string | null;
   /** 효과 부품(fx.ts)에 넘기는 묶음. */
-  get show(): Show { return { stage: this.stage, runner: this.runner, sound: this.app.sound }; }
+  get show(): Show { return { stage: this.stage, runner: this.runner, sound: this.app.sound,flashScale:this.app.flashScale }; }
   /** 화면에 들어가기 전에 필요한 그림을 준비한다. 캐시가 있으면 동기적으로 끝난다. */
   prepare(): Promise<void>|void {}
   /** 화면이 처음 올라올 때 한 번. 여기서 노드와 UI 부품을 올린다. */
@@ -49,6 +53,7 @@ export abstract class Screen {
 export class App {
   readonly surface: Surface;
   readonly sound = new Sound();
+  flashScale=reducedMotion()?.3:.7;fastHeld=false;
   cinematics?: Cinematics;
   loadingScreen=new LoadingScreen({screens:[],fallbacks:[],playerName:"",placeholders:{}},async()=>undefined);
   configureLoading(screen:LoadingScreen):void{this.loadingScreen=screen;if(this.loading){screen.progress.minimum=LoadingTransition.minimumSeconds+LoadingTransition.fadeSeconds;this.loadingScreen.begin();}}
@@ -71,6 +76,7 @@ export class App {
   constructor(canvas: HTMLCanvasElement) {
     this.surface = new Surface(canvas);
     new Input(this.surface, event => {
+      if(event.kind==='action'&&['fast-on','fast-off'].includes(event.action)){this.fastHeld=event.action==='fast-on';return;}if(event.kind==='pointer'&&event.phase==='up')this.fastHeld=false;
       if(event.kind==='action'||event.kind==='pointer'&&event.phase==='up')this.sound.unlock();
       if (!this.changing && !this.loading) this.top?.input(event);
     });
@@ -91,7 +97,7 @@ export class App {
   }
   /** 맨 위 화면을 걷는다. */
   pop(how: Transition = 'fade'): void {
-    this.change(() => { this.stack.pop()?.dispose(); this.top?.resume(); }, how);
+    this.change(() => { this.stack.pop()?.dispose(); this.top?.reflowMenu();this.top?.resume(); }, how);
   }
   /** Media owns its lifetime, even during another screen's fade. Never pop a newer screen
    * or replay the underlying screen's initial music over its current story cue. */
@@ -164,11 +170,11 @@ export class Cinematics {
  definition(id:string):VideoDef|undefined{return this.config.videos[id];}
  image(id?:string):HTMLImageElement|undefined{return id?this.images[id]:undefined;}
  read(file:string):Promise<ArrayBuffer>{return this.bytes(file);}
- play(id:string):Promise<void> {
+ play(id:string,battle=false):Promise<void> {
   const def=this.definition(id);if(this.config.enabled===false||!def||(!def.file&&!def.fallback))return Promise.resolve();
   if(!this.enabled&&!def.fallback)return Promise.resolve();
-  if(this.app.transitioning){const owner=this.app.top;return this.app.whenReady().then(()=>this.app.top===owner?this.play(id):undefined);}
-  return new Promise(resolve=>{const screen=new CinematicScreen(this,id,def,()=>{this.app.removeMedia(screen);resolve();});this.app.push(screen,'none');});
+  if(this.app.transitioning){const owner=this.app.top;return this.app.whenReady().then(()=>this.app.top===owner?this.play(id,battle):undefined);}
+  return new Promise(resolve=>{const screen=new CinematicScreen(this,id,def,()=>{this.app.removeMedia(screen);resolve();},battle);this.app.push(screen,'none');});
  }
  async opening(when:'title'|'new-game'):Promise<void>{const o=this.config.opening;if(!o||o.when&&o.when!==when||!o.when&&when!=='title')return;
   const key='srpg:'+this.packId+':opening-seen';try{if(localStorage.getItem(key))return;}catch{}
@@ -181,13 +187,14 @@ export class CinematicScreen extends Screen {
  private url?:string;private dead=false;private finished=false;private elapsed=0;private timeout=0;private videoTime=-1;
  private restore?:()=>void;private skip!:Button;private unmute!:Button;private poster?:HTMLImageElement;
  private detach?:()=>void;
- constructor(private readonly service:Cinematics,readonly id:string,private readonly def:VideoDef,private readonly done:()=>void){super();}
+ constructor(private readonly service:Cinematics,readonly id:string,private readonly def:VideoDef,private readonly done:()=>void,private readonly battle=false){super();}
  enter():void {
   this.restore=this.app.sound.duckMusic(this.def.music==='duck'?.22:0);
-  this.stage.ui.add(new Shape({},ctx=>{ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);const media=this.mode==='video'&&this.video?.readyState&&this.video.readyState>=2?this.video:this.poster;if(!media)return;const w=media instanceof HTMLVideoElement?media.videoWidth:media.naturalWidth,h=media instanceof HTMLVideoElement?media.videoHeight:media.naturalHeight;if(!w||!h)return;const scale=Math.min(W/w,(H-64)/h),dw=w*scale,dh=h*scale;ctx.drawImage(media,(W-dw)/2,(H-dh)/2,dw,dh);}));
-  this.skip=this.ui.add(Object.assign(new Button('건너뛰기',()=>this.requestSkip(),{w:190,h:72}),{x:W-288,y:H-88,visible:false}));
-  this.unmute=this.ui.add(Object.assign(new Button('소리 켜기',()=>this.enableSound(),{w:190,h:72}),{x:16,y:16,visible:false}));
-  const esc=this.ui.add(Object.assign(new Button('ESC',()=>this.requestSkip(),{w:72,h:64}),{x:W-80,y:8}));esc.alpha=.65;
+  this.stage.ui.add(new Shape({},ctx=>{ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);const media=this.mode==='video'&&this.video?.readyState&&this.video.readyState>=2?this.video:this.poster;if(!media)return;const w=media instanceof HTMLVideoElement?media.videoWidth:media.naturalWidth,h=media instanceof HTMLVideoElement?media.videoHeight:media.naturalHeight;if(!w||!h)return;const scale=Math.max(W/w,H/h),dw=w*scale,dh=h*scale;ctx.drawImage(media,(W-dw)/2,(H-dh)/2,dw,dh);}));
+  this.skip=this.ui.add(Object.assign(new Button('건너뛰기',()=>this.requestSkip(),{w:190,h:84}),{x:W-218,y:H-100,visible:this.battle}));
+  this.unmute=this.ui.add(Object.assign(new Button('소리 켜기',()=>this.enableSound(),{w:190,h:72}),{x:28,y:H-100,visible:false}));
+  // The skip button is the only visible escape control. Keyboard Esc uses the same gate.
+  if(!this.battle)this.skip.visible=true;
   this.ui.onCancel=()=>this.requestSkip();
   if(!this.service.enabled||!this.def.file){void this.fallback();return;}
   const video=this.video=document.createElement('video');video.playsInline=true;video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');video.preload='auto';video.setAttribute('aria-hidden','true');video.tabIndex=-1;Object.assign(video.style??{},{position:'fixed',left:'0',top:'0',width:'1px',height:'1px',opacity:'0',pointerEvents:'none',touchAction:'none'});document.body?.append(video);video.muted=!this.app.sound.activated;video.volume=this.app.sound.musicVolume;this.unmute.visible=video.muted;

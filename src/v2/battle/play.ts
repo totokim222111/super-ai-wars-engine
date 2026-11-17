@@ -30,8 +30,9 @@ export function* playStrike(scene: BattleScene, strike: Strike,progress?:StrikeP
   if (strike.banner) yield* scene.banner(strike.banner, attacker.fighter.side);
   yield* scene.announce(attacker, strike.weapon, lines.before);
   if(strike.combo){if(strike.combo.dialogue){for(const row of strike.combo.dialogue)yield*scene.partnerCutin(row.fighter,row.line);}else yield*scene.partnerCutin(strike.combo.partner,strike.combo.line);}
+  scene.videoShown=false;
   if(strike.weapon.video&&scene.video)yield*scene.video(strike.weapon.video);else if (strike.weapon.cutin) yield* scene.cutin(attacker);
-  yield* template.launch(context);if(progress)progress.launched=true;
+  if(!scene.videoShown)yield* template.launch(context);if(progress)progress.launched=true;
 
   // ── 맞는 쪽 화면 ──
   scene.setFront(target);
@@ -43,9 +44,9 @@ export function* playStrike(scene: BattleScene, strike: Strike,progress?:StrikeP
   for(const e of strike.effects??[])yield*scene.banner(e.text,scene.actor(e.targetId).fighter.side);
   yield* scene.dismiss();
 
-  if (destroyed && lines.after) {
+  if (destroyed) {
     yield* scene.focus(attacker);
-    yield* scene.say(attacker, lines.after, 'smile', 0.9);
+    if(lines.after)yield*scene.say(attacker,lines.after,'smile',.3);else yield*wait(.25);
     yield* scene.dismiss();
   }
 }
@@ -55,5 +56,5 @@ export function* playExchange(scene: BattleScene, exchange: Exchange,progress?:B
   if (!first) return;
   yield* scene.enter(scene.actor(first.attacker));
   for (const [i,strike] of exchange.strikes.entries()) yield* playStrike(scene, strike,progress?.strikes[i]);
-  yield* wait(0.4);
+  yield* wait(0.08);
 }

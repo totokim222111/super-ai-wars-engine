@@ -102,6 +102,7 @@ export class Director {
   *perform(cue: Cue): Step { yield* this.cue(cue); }
   dispose():void {this.clearLine();for(const bust of this.busts.values())bust.remove();this.busts.clear();this.seats.clear();this.background?.remove();this.shade?.remove();this.shade=undefined;this.place?.remove();this.darkness?.remove();this.background=undefined;this.place=undefined;this.darkness=undefined;}
   clearActors():void {for(const b of this.busts.values())b.remove();this.busts.clear();this.seats.clear();}
+  dimLine(alpha:number):void{if(this.line){this.line.alpha=alpha;(this.line as Shape<{compact?:boolean}>).state.compact=alpha<1;}}
   clearLine(): void { this.line?.remove();this.line=undefined;this.onLineVisible?.(false); }
   private *cue(cue: Cue): Step {
     yield* waitForImages(this.show,cueImages([cue],this.cast,this.images));

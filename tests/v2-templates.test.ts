@@ -18,12 +18,13 @@ const transform = (n: { x: number; y: number; rotation: number; scaleX: number; 
   [n.x, n.y, n.rotation, n.scaleX, n.scaleY];
 
 function exercise(anim: WeaponAnim, outcome: Outcome, side: Side, whole = false) {
+  if(anim.template==='sequence'&&!anim.moves)anim={template:'sequence',moves:[{move:'ram',prop:'shield'}],element:'impact',closer:'none',tier:1};
   const show = { stage: new Stage(), runner: new Runner() }, other = side === 'ally' ? 'enemy' : 'ally';
   const weapon = { name: 'contract', cost: 0, anim }, exchange = { fighters: [fighter(side), fighter(other)],
     strikes: [{ attacker: side, target: other, weapon, outcome }] };
   const scene = new BattleScene(show, exchange), attacker = scene.actor(side), target = scene.actor(other);
   const original = transform(target.sprite), fxNodes = [...show.stage.fx.nodes], uiNodes = [...show.stage.ui.nodes];
-  const land = vi.spyOn(scene, 'land'), context = makeContext(scene, attacker, target, weapon, outcome), template = TEMPLATES[anim.template];
+  const land = vi.spyOn(scene, 'land'), contact=vi.spyOn(scene,'sequenceNotice'), context = makeContext(scene, attacker, target, weapon, outcome), template = TEMPLATES[anim.template];
   const trajectories: number[] = [];
   const record = (from: { x: number }, to: { x: number }) => { if (Math.abs(to.x - from.x) > 1) trajectories.push(Math.sign(to.x - from.x)); };
   // from이 움직이는 비트 노드여도 호출 순간의 궤적을 보관한다.
@@ -61,7 +62,7 @@ function exercise(anim: WeaponAnim, outcome: Outcome, side: Side, whole = false)
   spies.forEach(spy => spy.mockRestore());
   expect(show.runner.busy, `${anim.template}: still running at 15s`).toBe(false);
   expect(frames).toBeLessThan(900);
-  expect(land).toHaveBeenCalled(); land.mockRestore();
+  expect(anim.template==='sequence'?contact:land).toHaveBeenCalled(); land.mockRestore();contact.mockRestore();
   expect(show.stage.fx.nodes).toEqual(fxNodes);
   expect(show.stage.ui.nodes).toEqual(uiNodes);
   transform(target.sprite).forEach((n, i) => expect(n).toBeCloseTo(original[i], 6));

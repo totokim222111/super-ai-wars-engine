@@ -1,3 +1,4 @@
+import {safeCaption} from './safe-area';
 import type {Speech} from './lines';
 import {term} from '../terms';
 /**
@@ -12,13 +13,15 @@ import {term} from '../terms';
  * 무기 연출 틀(templates/)은 이 장면의 메서드를 순서대로 부르기만 한다.
  */
 import { all, ease, tween, wait, type Flow, type Step } from '../flow';
-import { afterimage, burst, drainGauge, flash, impactLines, pop, ring, shake, sparks, spawn, speedLines, type Show } from '../fx';
+import { afterimage, burst, drainGauge, flash, impactLines, pop as rawPop, ring, shake, sparks, spawn, speedLines, type Show } from '../fx';
 import { H, Shape, Sprite, W, type Node } from '../stage';
 import { battleLine, bigText, COLOR, cover, wrap,drawPortrait, faceOf, FONT, hudState, unitHud, weaponPlate, type HudState } from '../ui';
 import type { Anchors, Exchange, Fighter, Lines, Outcome, Side, Weapon } from './types';
 
+function pop(show:Show,text:string,x:number,y:number,size:number,fill:string,stroke:string,hold=.35):void{const b=safeCaption(x,y,text.length*size*.72,size+88);rawPop(show,text,b.x+b.w/2,b.y+b.h/2+24,size,fill,stroke,hold);}
 /** 발이 닿는 높이, 각자의 화면에서 서는 자리, 화면 밖 지점. */
-export const GROUND = 606;
+export const GROUND = 564;
+export const MAX_BATTLE_HEIGHT=440;
 export const HOME: Record<Side, number> = { ally: 800, enemy: 480 };
 export const OFF = { left: -340, right: W + 340 };
 /**
@@ -35,7 +38,8 @@ export interface Actor { fighter: Fighter; sprite: Sprite; hud: HudState; dead: 
 const tint = (side: Side): string => (side === 'ally' ? COLOR.ally : COLOR.enemy);
 
 export class BattleScene {
-  video?:(id:string)=>Step;
+  readonly animationArt?:import('./animation-art').AnimationArt;
+  video?:(id:string)=>Step;videoShown=false;
   onResult?:()=>void;
   onDefeat?:()=>void;
   readonly actors = new Map<string, Actor>();
@@ -50,6 +54,7 @@ export class BattleScene {
   private noted = false;
 
   constructor(readonly show: Show, exchange: Exchange) {
+    this.animationArt=exchange.animationArt;
     const { stage } = show, image = exchange.background;
     // 배경은 좌우로 이어 붙여 깐다(홀수 번째는 뒤집어서 이음매가 맞게). 컷으로 카메라가 크게 움직여도 끝이 드러나지 않는다.
     this.backdrop = stage.back.add(new Shape({}, ctx => {
@@ -61,9 +66,10 @@ export class BattleScene {
         ctx.drawImage(image, -width / 2, 0, width + 1, height); ctx.restore();
       }
     }));
+    const separation=stage.back.add(new Shape({},ctx=>{const gradient=ctx.createLinearGradient(0,200,0,GROUND+20);gradient.addColorStop(0,'rgba(10,20,48,0)');gradient.addColorStop(.4,'rgba(10,20,48,.34)');gradient.addColorStop(1,'rgba(10,20,48,.34)');ctx.fillStyle=gradient;ctx.fillRect(0,200,W,GROUND-180);}));separation.z=1;
     Object.assign(this.backdrop, { x: W / 2 - 240, y: H / 2 });
     for (const fighter of exchange.fighters) {
-      const side = fighter.side, sprite = new Sprite(fighter.image, fighter.height).trimToContent();
+      const side = fighter.side, sprite = new Sprite(fighter.image, Math.min(MAX_BATTLE_HEIGHT,fighter.height)).trimToContent();
       // 아군은 왼쪽을, 적은 오른쪽을 본다. 그림이 반대로 그려져 있으면 뒤집는다.
       Object.assign(sprite, { x: HOME[side], y: GROUND, anchorY: 1, visible: false, flipX: fighter.faces !== (side === 'ally' ? 'left' : 'right') });
       stage.world.add(sprite);
@@ -117,7 +123,7 @@ export class BattleScene {
     black.z = 95; this.screen = side; this.setFront(first); this.stand(side);
     this.backdrop.x = W / 2 + (side === 'enemy' ? 240 : -240);
     first.sprite.x = HOME[side] + (side === 'ally' ? 420 : -420);
-    yield* all(tween(black, { alpha: 0 }, 0.35), tween(first.sprite, { x: HOME[side] }, 0.45));
+    yield* all(tween(black, { alpha: 0 }, 0.2), tween(first.sprite, { x: HOME[side] }, 0.3));
     black.remove();
   }
 
@@ -127,12 +133,12 @@ export class BattleScene {
     const lines = speedLines(show, direction < 0 ? 1 : -1);
     lines.alpha = 1;
     show.sound?.play('whoosh');
-    yield* tween(camera, { x: W / 2 + direction * W }, 0.11, ease.in);
+    yield* tween(camera, { x: W / 2 + direction * W }, 0.06, ease.in);
     this.screen = to; this.stand(to);
     this.backdrop.x = W / 2 + (to === 'enemy' ? 240 : -240);   // 서로 다른 자리처럼 보이게 배경을 어긋나게 둔다
     Object.assign(camera, { x: W / 2 - direction * W, y: H / 2, zoom: 1 });
-    yield* tween(camera, { x: W / 2 }, 0.15, ease.out);
-    yield* tween(lines, { alpha: 0 }, 0.08);
+    yield* tween(camera, { x: W / 2 }, 0.09, ease.out);
+    yield* tween(lines, { alpha: 0 }, 0.04);
     lines.remove();
   }
 
@@ -151,8 +157,8 @@ export class BattleScene {
     this.line?.remove();
     const line = battleLine({ name: fighter.pilot, text, shown: 0, color: tint(fighter.side), side: ally ? 'right' : 'left', portrait: fighter.portrait, mood });
     line.z = 50; this.line = this.show.stage.ui.add(line);
-    let elapsed=0;while(elapsed<text.length/34){elapsed+=yield;line.state.shown=Math.min(text.length,elapsed*34);}
-    elapsed=0;while(elapsed<Math.max(.6,hold/this.show.runner.speed))elapsed+=(yield)/this.show.runner.speed;
+    let elapsed=0,wall=0;while(elapsed<text.length/60){const dt=yield;elapsed+=dt;wall+=dt/this.show.runner.speed;line.state.shown=Math.min(text.length,elapsed*60);}
+    const target=wall+Math.max(this.show.runner.speed>1?.6:hold,hold/this.show.runner.speed);while(wall<target)wall+=(yield)/this.show.runner.speed;
   }
 
   /** 화면 가운데를 가로지르는 알림 띠("반격", "원호 방어"). */
@@ -169,7 +175,7 @@ export class BattleScene {
     this.show.stage.ui.add(node);
     this.show.sound?.play('confirm', 0.8);
     yield* tween(node.state, { open: 1 }, 0.12);
-    yield* wait(0.55);
+    yield* wait(0.22);
     yield* tween(node.state, { open: 0 }, 0.1, ease.in);
     node.remove();
   }
@@ -180,7 +186,7 @@ export class BattleScene {
     // 무기 이름은 기체의 맞은편에서 들어온다.
     const node = show.stage.ui.add(weaponPlate(weapon.name, tint(fighter.side), ally ? 'left' : 'right'));
     const out = ally ? -560 : W + 560;
-    Object.assign(node, { x: out, y: H - 202, z: 51 });
+    Object.assign(node, { x: out, y: 132, z: 51 });
     this.plate?.node.remove(); this.plate = { node, out };
     if (weapon.cost > 0) {
       // 소모량이 정보창 아래에서 떠올랐다 사라진다.
@@ -195,22 +201,22 @@ export class BattleScene {
     }
     const drain = drainGauge(show, hud, 'en', Math.max(0, hud.en - weapon.cost));
     yield* all(
-      tween(node, { x: ally ? 40 : W - 40 }, 0.3),
-      line ? this.say(attacker, line, 'attack') : wait(0.5),
-      (function* (): Step { yield* wait(0.25); if (weapon.cost > 0) yield* drain; })(),
+      tween(node, { x: ally ? 40 : W - 40 }, 0.18),
+      line ? this.say(attacker, line, 'attack',.3) : wait(0.15),
+      (function* (): Step { yield* wait(0.05); if (weapon.cost > 0) yield* drain; })(),
     );
   }
 
   /** 무기 이름과 대사창을 치운다. */
   *dismiss(): Step {
-    if (this.plate) { const { node, out } = this.plate; this.plate = undefined; yield* tween(node, { x: out }, 0.2, ease.in); node.remove(); }
+    if (this.plate) { const { node, out } = this.plate; this.plate = undefined; yield* tween(node, { x: out }, 0.10, ease.in); node.remove(); }
     this.line?.remove(); this.line = undefined;
   }
 
   /** 파일럿 컷인: 비스듬한 띠가 열리고 눈매가 흘러 들어온다. 그 기체에 컷인 영역이 없으면 아무것도 하지 않는다. */
   *partnerCutin(fighter:Fighter,speech:Speech):Step {
     const text=typeof speech==='string'?speech:speech.text,mood=typeof speech==='string'?'attack':speech.mood??'attack';
-    const node=this.show.stage.ui.add(new Shape({},ctx=>{ctx.fillStyle='rgba(7,20,55,.96)';ctx.fillRect(0,125,W,240);ctx.fillStyle='#82f4ff';ctx.fillRect(0,125,W,4);drawPortrait(ctx,fighter.portrait,mood,fighter.portrait.crop,55,135,200,200);ctx.font=`700 30px ${FONT.body}`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#fff';ctx.fillText(fighter.pilot+' · 합체기',285,157);ctx.font=`24px ${FONT.body}`;wrap(ctx,text,W-325).forEach((line,i)=>ctx.fillText(line,285,215+i*32));}));node.z=85;
+    const node=this.show.stage.ui.add(new Shape({},ctx=>{ctx.fillStyle='rgba(7,20,55,.96)';ctx.fillRect(0,212,W,240);ctx.fillStyle='#82f4ff';ctx.fillRect(0,212,W,4);drawPortrait(ctx,fighter.portrait,mood,fighter.portrait.crop,55,222,200,200);ctx.font=`700 30px ${FONT.body}`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#fff';ctx.fillText(fighter.pilot+' · 합체기',285,244);ctx.font=`24px ${FONT.body}`;wrap(ctx,text,W-325).forEach((line,i)=>ctx.fillText(line,285,302+i*32));}));node.z=85;
     // Expose the exact displayed speaker/text for replay inspection, not game state.
     Object.assign(node.state,{speech:text,mood,speaker:fighter.id});
     this.show.sound?.play('confirm');let elapsed=0;const hold=Math.max(1.15,text.length/24);while(elapsed<Math.max(.6,hold/this.show.runner.speed))elapsed+=(yield)/this.show.runner.speed;node.remove();
@@ -233,22 +239,30 @@ export class BattleScene {
       if (image?.naturalWidth) {
         const drawHeight = 330, drawWidth = drawHeight * (crop.w * image.naturalWidth) / (crop.h * image.naturalHeight);
         ctx.save(); ctx.transform(1, 0, 0.26 * flow, 1, 0, 0);   // 얼굴은 기울이지 않는다
-        drawPortrait(ctx,fighter.portrait,'attack',crop,(-160+s.drift)*flow-drawWidth/2,-drawHeight/2,drawWidth,drawHeight);
+        const faceX=(-160+s.drift)*flow-drawWidth/2;for(let j=0;j<40;j++){ctx.save();ctx.beginPath();ctx.rect(faceX+j*drawWidth/40,-drawHeight/2,drawWidth/40+1,drawHeight);ctx.clip();ctx.globalAlpha*=Math.min(1,(j+.5)/4,(39.5-j)/4);drawPortrait(ctx,fighter.portrait,'attack',crop,faceX,-drawHeight/2,drawWidth,drawHeight);ctx.restore();}
         ctx.restore();
       }
       ctx.fillStyle = '#fff'; ctx.fillRect(-W, -height / 2, W * 2, 4); ctx.fillRect(-W, height / 2 - 4, W * 2, 4);
     });
-    Object.assign(band, { x: W / 2, y: 262, z: 30 });
+    Object.assign(band, { x: W / 2, y: 311, z: 30 });
     show.stage.ui.add(band);
     show.sound?.play('flash');
     yield* all(tween(band.state, { open: 1 }, 0.12), tween(lines, { alpha: 1 }, 0.12));
-    yield* tween(band.state, { drift: 0 }, 0.75, ease.out);
+    yield* tween(band.state, { drift: 0 }, 0.45, ease.out);
     yield* all(tween(band.state, { open: 0 }, 0.1, ease.in), tween(lines, { alpha: 0 }, 0.1));
     band.remove(); lines.remove();
   }
 
   /** 공격 하나가 시작될 때 부른다("빗나감"·"방어" 글자를 다시 띄울 수 있게). */
   begin(): void { this.noted = false; }
+
+  /** Sequence parts own all transforms and hit-stop timing; only the shared notice lives here. */
+  sequenceNotice(defender:Actor,outcome:Outcome):void {
+    if(this.noted||outcome.hit&&!outcome.guard)return;
+    this.noted=true;
+    if(!outcome.hit)this.onResult?.();
+    pop(this.show,outcome.hit?'방어':'빗나감',defender.sprite.x,Math.max(190,GROUND-defender.sprite.height-30),72,outcome.hit?'#e9fbff':'#e9f2ff',outcome.hit?'#0b6f8a':'#3b4a78',.66);
+  }
 
   /**
    * 한 방이 닿는 순간. 틀은 이것만 부르고, 결과에 따라 무엇을 보여 줄지는 여기서 정한다.
@@ -297,7 +311,7 @@ export class BattleScene {
   *dodge(defender: Actor, dir: 1 | -1): Step {
     const { show } = this, { sprite, fighter } = defender, home = HOME[fighter.side];
     show.sound?.play('whoosh', 0.7);
-    if (!this.noted) { this.noted = true;this.onResult?.(); pop(show, '빗나감', sprite.x, GROUND - sprite.height - 40, 84, '#e9f2ff', '#3b4a78', 0.6); }
+    if (!this.noted) { this.noted = true;this.onResult?.(); pop(show, '빗나감', sprite.x, Math.max(190,GROUND-sprite.height-30),72, '#e9f2ff', '#3b4a78',.66); }
     afterimage(show, sprite);
     show.runner.run((function* (): Step {
       yield* tween(sprite, { x: home + dir * 130, y: GROUND - 34 }, 0.08, ease.out);
@@ -313,7 +327,7 @@ export class BattleScene {
     const { show } = this, { sprite, hud, fighter } = defender, home = HOME[fighter.side];
     const x = sprite.x - dir * sprite.width * 0.42, y = sprite.y - sprite.height * 0.5, size = sprite.height * 0.62;
     show.sound?.play('hit', 0.5); show.sound?.play('deny', 0.6);
-    if (!this.noted) { this.noted = true; pop(show, '방어', sprite.x, GROUND - sprite.height - 40, 84, '#e9fbff', '#0b6f8a', 0.6); }
+    if (!this.noted) { this.noted = true; pop(show, '방어', sprite.x, Math.max(190,GROUND-sprite.height-30),72, '#e9fbff', '#0b6f8a',.66); }
     // 방패: 공격을 향해 볼록한 호 세 겹.
     const shield = new Shape({}, ctx => {
       ctx.lineCap = 'round';
@@ -354,21 +368,18 @@ export class BattleScene {
   *resolve(defender: Actor, outcome: Outcome, lines: Lines = {}): Flow<boolean> {
     const { show } = this, { sprite, hud, fighter } = defender;
     if (!outcome.hit) {
-      this.onResult?.();yield* wait(0.35);
+      this.onResult?.();pop(show,'회피',sprite.x,Math.max(212,GROUND-sprite.height-30),56,'#e9f2ff','#3b4a78',.66);yield* wait(.6);
       if (lines.dodge) yield* this.say(defender, lines.dodge, 'smile', 0.8);
       return false;
     }
-    if(outcome.barrier){yield*this.guard(defender,this.dir(defender),180);pop(show,outcome.barrier==='immune'?'무효!':'경감',sprite.x,GROUND-sprite.height*.8,90,'#d9fcff','#138dce',1);yield*wait(.35);}
+    if(outcome.barrier){yield*this.guard(defender,this.dir(defender),180);pop(show,outcome.barrier==='immune'?'무효!':'경감',sprite.x,Math.max(190,GROUND-sprite.height-30),76,'#d9fcff','#138dce',1);yield*wait(.35);}
     this.onResult?.();
-    const left = Math.max(0, hud.hp - outcome.damage), x = sprite.x + (fighter.side === 'enemy' ? 90 : -90), y = GROUND - sprite.height * 0.74;
+    const left = Math.max(0, hud.hp - outcome.damage), x = sprite.x + (fighter.side === 'enemy' ? 160 : -160), y = Math.max(200,GROUND-sprite.height-30);
     if (outcome.critical) {
-      pop(show, '크리티컬', x, y - 110, 62, '#fff6c9', '#b36b00', 0.9);
-      pop(show, String(outcome.damage), x, y, 150, '#fff2b0', '#e06a00', 0.9);
-    } else pop(show, String(outcome.damage), x, y, 132, '#ffffff', outcome.guard ? '#0b6f8a' : '#ff5a1f', 0.9);
-    yield* drainGauge(show, hud, 'hp', left);
-    yield* wait(0.2);
-    if (left <= 0) { yield* this.destroy(defender, lines.lastWords); return true; }
-    if (lines.reaction) yield* this.say(defender, lines.reaction, 'hit', 0.8);
+      const n=safeCaption(x,y,Math.max(180,String(outcome.damage).length*120*.72),260);rawPop(show,'크리티컬',n.x+n.w/2,n.y+30,28,'#fff6c9','#101d35',.66);yield*wait(.08);rawPop(show,String(outcome.damage),n.x+n.w/2,n.y+180,120,'#fff2b0','#e06a00',.66);
+    } else if(outcome.guard){const nw=Math.max(220,String(outcome.damage).length*104*.72),b=safeCaption(x,y,nw+230,180);rawPop(show,'방어',b.x+75,b.y+90,56,'#e9fbff','#0b6f8a',.66);rawPop(show,String(outcome.damage),b.x+230+nw/2,b.y+90,104,'#fff','#0b6f8a',.66);}else pop(show,String(outcome.damage),x,y,104,'#fff','#ff5a1f',.66);
+    if(left>0&&lines.reaction)yield*all(drainGauge(show,hud,'hp',left),this.say(defender,lines.reaction,'hit',.25));else yield*drainGauge(show,hud,'hp',left);
+    if(left<=0){yield*this.destroy(defender,lines.lastWords);return true;}
     return false;
   }
 
@@ -376,13 +387,13 @@ export class BattleScene {
   *destroy(actor: Actor, lastWords?: Speech): Step {
     const { show } = this, { sprite } = actor, camera = show.stage.camera;
     yield* all(lastWords ? this.say(actor, lastWords, 'hit', 0.5) : wait(0.2), tween(camera, { x: W / 2 + (sprite.x - W / 2) * 0.5, zoom: 1.14 }, 0.4));
-    for (const [dx, dy] of [[-50, -210], [60, -120], [-10, -300], [30, -190], [-70, -110]]) {
-      show.sound?.play('hit', 0.8);
+    for (const [dx, dy] of [[-40,-150],[40,-90],[-10,-210]]) {
+      show.sound?.play('hit',.25);
       burst(show, sprite.x + dx, GROUND + dy, 150, '#ffb347');
       sparks(show, sprite.x + dx, GROUND + dy, 12, 200, '#ffd23f');
       sprite.flash = 0.8; show.runner.run(tween(sprite, { flash: 0 }, 0.1));
       show.runner.run(shake(show, 20, 0.2));
-      yield* wait(0.12);
+      yield* wait(0.07);
     }
     flash(show, 1, 0.7);
     show.sound?.play('explode');
@@ -395,7 +406,7 @@ export class BattleScene {
     show.runner.hold(0.12);
     yield* tween(sprite, { alpha: 0, y: GROUND + 30, rotation: actor.fighter.side === 'enemy' ? -0.35 : 0.35 }, 0.3, ease.in);
     actor.dead = true; sprite.visible = false;
-    yield* wait(0.6);
-    yield* tween(camera, { x: W / 2, zoom: 1 }, 0.25);
+    yield* wait(0.12);
+    yield* tween(camera, { x: W / 2, zoom: 1 }, 0.12);
   }
 }

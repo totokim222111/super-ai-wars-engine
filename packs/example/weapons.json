@@ -1,25 +1,51 @@
 {
   "pulse": {
     "anim": {
-      "template": "beam",
+      "template": "sequence",
+      "moves": [
+        {
+          "move": "cannon",
+          "prop": "token"
+        }
+      ],
+      "element": "light",
+      "closer": "none",
+      "tier": 1,
       "color": "#7fe9f7"
     }
   },
   "blade": {
     "anim": {
-      "template": "slash-combo",
-      "hits": 2,
-      "words": [
-        "슥",
-        "탁"
-      ]
+      "template": "sequence",
+      "moves": [
+        {
+          "move": "slash",
+          "hits": 3
+        },
+        {
+          "move": "stamp",
+          "prop": "star"
+        }
+      ],
+      "element": "ice",
+      "closer": "none",
+      "tier": 1,
+      "color": "#7fe9f7"
     }
   },
   "pebble": {
     "anim": {
-      "template": "rapid-fire",
-      "rows": 1,
-      "shots": 3
+      "template": "sequence",
+      "moves": [
+        {
+          "move": "lob",
+          "prop": "pixel"
+        }
+      ],
+      "element": "data",
+      "closer": "none",
+      "tier": 1,
+      "color": "#7fe9f7"
     }
   },
   "practice-round": {
@@ -29,7 +55,24 @@
   },
   "trio-beam": {
     "anim": {
-      "template": "finisher"
+      "template": "sequence",
+      "moves": [
+        {
+          "move": "bind",
+          "prop": "net"
+        },
+        {
+          "move": "mirage"
+        },
+        {
+          "move": "slam-down",
+          "prop": "star"
+        }
+      ],
+      "element": "rgb",
+      "closer": "nova",
+      "tier": 1,
+      "color": "#7fe9f7"
     },
     "cutin": true,
     "video": "walk-finisher"

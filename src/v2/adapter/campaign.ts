@@ -14,7 +14,7 @@ import { setPlayer, playerName, validPlayerName } from '../../campaign/player';
 import {persistentUnit, persistBattle } from '../../campaign/progress';
 import type { CampaignContent } from '../../campaign/content';
 import { makeSave, slotName, type Saves, type SlotId } from '../../campaign/saves';
-import { normalizeSettings, settingsKey } from '../../platform/settings';
+import { normalizeSettings, settingsKey, reducedMotion } from '../../platform/settings';
 import type { LocalStore } from '../../platform/storage';
 import { createGame } from '../../game/controller';
 import { createRunner } from '../../scenario/runner';
@@ -34,7 +34,7 @@ const names:Partial<Record<UpgradeKey,string>> = {hp:'HP',armor:'장갑',mobilit
 
 export class CoreCampaign implements MenuModel {
   session: Session = titleSession();
-  private preferences: MenuSettings = { sfx: 8, music: 6, animation: 'on', speed: 1, shake: 10 };
+  private preferences: MenuSettings = {uiSize:'auto',flash:reducedMotion()?3:7,enemyBattle:'full',helpSeen:false,tutorial:true, sfx: 8, music: 6, animation: 'on', speed: 1, shake: 10 };
   private playTime = 0;
   private started = Date.now();
   /** 불러오기 검사에서 선택한 현재 캠페인 계약으로 후속 저장도 검사한다. */
@@ -140,7 +140,7 @@ export class CoreCampaign implements MenuModel {
     if(!attacker||attacker.side!=='player'||!target||target.side!=='enemy'||!target.alive||target.tags?.includes('no-reward'))return undefined;
     const amount=defeatPoints(this.progression.training,before,target);return amount?{name:attacker.pilotId===this.data.players?.pilotId?playerName(this.session.campaign):before.content.pilots.find(p=>p.id===attacker.pilotId)!.name,amount}:undefined;
   }
-  slots() { return this.saves.slots.map(s => ({ id: s.id, label: slotName(s.id), available: s.status === 'ok', detail: s.file ? `${s.file.summary.stage} · ${s.file.summary.turn ?? '—'}턴 · ${new Date(s.file.savedAt).toLocaleString('ko-KR')} · ${playerName(s.file.campaign)}` : s.status === 'empty' ? '빈 칸' : '읽을 수 없음' })); }
+  slots() { return this.saves.slots.map(s => ({ id: s.id, label: slotName(s.id), available: s.status === 'ok', detail: s.file ? `${s.file.summary.stage} · ${s.file.summary.turn===undefined?'인터미션':s.file.summary.turn+'턴'} · ${new Date(s.file.savedAt).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})} · ${playerName(s.file.campaign)}` : s.status === 'empty' ? s.id==='suspend'?'맵에서 나갈 때 자동 저장':'빈 칸' : '읽을 수 없음' })); }
   private writeSave(slot:string):Promise<void>{return this.saves.write(slot as SlotId,makeSave(this.session,this.savingData??this.data,this.playTime+Date.now()-this.started));}
   async save(slot:string):Promise<void>{try{await this.writeSave(slot);}catch(error){console.warn('[save] 수동 저장 실패',error);this.storageNotice=STORAGE_NOTICE;this.onStorageIssue?.();throw new Error('저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.');}}
   private autoSaving?:Promise<void>;private autoDirty=false;
@@ -159,7 +159,7 @@ export class CoreCampaign implements MenuModel {
   settings(): MenuSettings { return { ...this.preferences }; }
   setSettings(s: MenuSettings): void {
     const number = (n: number, min: number, max: number, fallback: number) => Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
-    this.preferences = { cinematic:s.cinematic!==false, sfx: number(s.sfx, 0, 10, 8), music: number(s.music, 0, 10, 6), speed: number(s.speed, 1, 3, 1), shake: number(s.shake, 0, 10, 10), animation: ['on', 'off', 'allies'].includes(s.animation) ? s.animation : 'on' };
+    this.preferences = {uiSize:['auto','normal','large'].includes(s.uiSize??'auto')?s.uiSize:'auto',flash:number(s.flash??(reducedMotion()?3:7),0,10,7),enemyBattle:s.enemyBattle==='brief'?'brief':'full',helpSeen:s.helpSeen===true,tutorial:s.tutorial!==false, cinematic:s.cinematic!==false, sfx: number(s.sfx, 0, 10, 8), music: number(s.music, 0, 10, 6), speed: number(s.speed, 1, 3, 1), shake: number(s.shake, 0, 10, 10), animation: ['on', 'off', 'allies'].includes(s.animation) ? s.animation : 'on' };
     try {
       const old = normalizeSettings(JSON.parse(this.storage?.getItem(settingsKey(this.data.id)) ?? '{}'));
       this.storage?.setItem(settingsKey(this.data.id), JSON.stringify(normalizeSettings({ ...old, volume: this.preferences.sfx, animation: this.preferences.animation })));

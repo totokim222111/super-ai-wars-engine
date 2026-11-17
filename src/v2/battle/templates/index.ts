@@ -16,8 +16,10 @@ import { artillery } from './artillery';
 import { spreadShot } from './spread-shot';
 import { wordSlam } from './word-slam';
 import { finisher } from './finisher';
+import { sequence } from './sequence';
 
 export const TEMPLATES: Record<string, Template> = {
+  'sequence': sequence,
   'slash-combo': slashCombo,
   'rapid-fire': rapidFire,
   'beam': beamShot,

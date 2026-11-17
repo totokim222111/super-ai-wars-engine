@@ -106,7 +106,7 @@ export function compileStage(source:StageSource,catalog:StageCatalog,file:string
   stage.definitions=rows.filter(r=>r.pending&&!assigned.has(r.unit.id)).map(r=>r.unit);
   for(const r of rows.filter(r=>r.pending&&!assigned.has(r.unit.id)))if(r.point)point(r.unit.x,r.unit.y,r.line,r.unit.id);
   const name=(id:string)=>{const u=rows.find(r=>r.unit.id===id)?.unit;if(!u)return id;const cast=catalog.units?.[u.mechId]?.pilotCast??u.pilotId;return catalog.cast?.[cast]?.name??(u.pilotId===catalog.defaultPilot?content.mechs.find(m=>m.id===u.mechId)?.name:content.pilots.find(p=>p.id===u.pilotId)?.name)??id;};
-  const label=(r:Rule)=>/^격파 수 \d+$/.test(r.text)?r.text.replace(/^격파 수 (\d+)$/,'적 $1기 격파'):r.text.replace(/^격파\s+(.+)$/,(_,ids:string)=>ids.split(/\s*,\s*/).map(name).join(', ')+' 격파').replace(/^도달\s+([\w-]+)\s+(.+)$/,(_,id:string,area:string)=>`${name(id)} ${area} 도달`);
+  const label=(r:Rule)=>/^격파 [\w-]+(?:\s*,\s*[\w-]+)*$/.test(r.text)&&(()=>{const ids=r.text.slice(3).split(/\s*,\s*/),enemies=rows.filter(r=>r.unit.side==='enemy').map(r=>r.unit.id);return ids.length===enemies.length&&enemies.every(id=>ids.includes(id));})()?'적 전멸':objectiveLabel(r.text,name,(unit,form)=>{const definition=source.rules.find(r=>r.text.startsWith('형태 '+unit+' = '))?.text.split(' = ')[1];const mech=definition?.split(' / ').map(s=>s.split(':')).find(([id])=>id===form)?.[1];return content.mechs.find(m=>m.id===mech)?.name??form;});
   if(!objectives.win.length&&wins.length)objectives.win=[wins.map(label).join(' 또는 ')];if(!objectives.lose.length&&losses.length)objectives.lose=[losses.map(label).join(' 또는 ')];
   if(!wins.length)fail(source.line,'승리 조건이 없습니다.','승리: 적 전멸 또는 다른 승리 조건을 적으세요.');if(!losses.length)fail(source.line,'패배 조건이 없습니다.','패배: 아군 전멸 / 격파 player를 적으세요.');
   const resolveCondition=(r:Rule):{condition:Condition;triggers:Trigger[]} | undefined=>{
@@ -160,7 +160,7 @@ export function compileStage(source:StageSource,catalog:StageCatalog,file:string
   const explicit=source.rules.find(r=>r.text.startsWith('안내 목표:'))?.text.slice(6).trim();
   const targets=explicit!==undefined?explicit.split(/\s*,\s*/).filter(Boolean):[...new Set(wins.flatMap(r=>(/^격파 [\w-]+(?:\s*,\s*[\w-]+)*$/.test(r.text))?r.text.slice(3).split(/\s*,\s*/):[]))];
   for(const id of targets)if(!rows.some(r=>r.unit.id===id))fail(source.line,'없는 안내 목표: '+id,'배치·대기 유닛 id를 쓰세요.');
-  const hints:MapHint[]=[...targets.flatMap(id=>{const u=rows.find(r=>r.unit.id===id)?.unit;return u?[{id:'victory:'+id,name:name(id),kind:'victory' as const,unit:id,cell:{col:u.x,row:u.y},marker:false}]:[];}),...regions.filter(r=>r.label).map(r=>({id:r.name,name:r.label!,kind:r.danger?'danger' as const:'optional' as const,cell:{col:r.area[0],row:r.area[1]},area:r.area,scene:'사건 '+r.event,share:r.share,untilTurn:r.deadline,alive:r.alive,marker:r.marker}))];
+  const hints:MapHint[]=[...targets.flatMap(id=>{const u=rows.find(r=>r.unit.id===id)?.unit;return u?[{id:'victory:'+id,name:name(id),objective:objectives.win[0],appearsTurn:spawns.find(s=>s.units.some(u=>u.id===id))?.triggers.map(r=>/^(?:적 )?턴 (\d+)$/.exec(r.text)).find(Boolean)?.[1]?Number(spawns.find(s=>s.units.some(u=>u.id===id))!.triggers.map(r=>/^(?:적 )?턴 (\d+)$/.exec(r.text)).find(Boolean)![1]):undefined,kind:'victory' as const,unit:id,cell:{col:u.x,row:u.y},marker:false}]:[];}),...regions.filter(r=>r.label).map(r=>({id:r.name,name:r.label!,kind:r.danger?'danger' as const:'optional' as const,cell:{col:r.area[0],row:r.area[1]},area:r.area,scene:'사건 '+r.event,share:r.share,untilTurn:r.deadline,alive:r.alive,marker:r.marker}))];
   return {stage,program,setting,hints,...(mapArt?{mapArt}:{}),objectives,markers,ai,facts,issues};
 }
 /** 코어 Condition에 없는 위치·격파 수만 boolean 자료로 투영한다. 난수는 쓰지 않는다. */
@@ -168,3 +168,16 @@ export function stageFacts(compiled:CompiledStage,state:BattleState,flags:Record
   const deadSide=(side:string)=>{const us=state.units.filter(u=>side==='hostile'?['enemy','third'].includes(faction(u)):faction(u)===side);return us.length>0&&!us.some(u=>u.alive&&!u.removed);};
   for(const fact of compiled.facts){const u=state.units.find(u=>u.id===fact.unit),area=state.stage.areas?.[fact.area??''];const target=state.units.find(v=>v.id===fact.target);const yes=fact.kind==='side-dead'?deadSide(fact.side!):fact.kind==='form'?!!u&&formName(state,u)===fact.form:fact.kind==='form-defeated'?!!runtime(state).defeated[`${fact.unit}.${fact.form}`]:fact.kind==='adjacent'?!!u?.alive&&!!target?.alive&&!u.removed&&!target.removed&&Math.abs(u.x-target.x)+Math.abs(u.y-target.y)===1:fact.kind==='kills'?state.units.filter(u=>u.side==='enemy'&&!u.alive&&!u.removed).length>=fact.count!:fact.kind==='defeated'?!!u&&!u.alive&&!u.removed:!!u?.alive&&!!area&&u.x>=area[0]&&u.y>=area[1]&&u.x<=area[2]&&u.y<=area[3];if(yes)flags[fact.id]=true;else delete flags[fact.id];}
 }
+
+/** Display-only lowering; the scenario conditions and source text remain unchanged. */
+export function objectiveLabel(text:string,name:(id:string)=>string,formName:(unit:string,form:string)=>string=(_,f)=>f):string{
+ text=text.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+ if(text.includes(' & '))return text.split(' & ').map(s=>objectiveLabel(s,name,formName)).join(' · ');
+ let m=/^(형태|격파형태) ([\w-]+) (\S+)$/.exec(text);if(m)return `${formName(m[2],m[3])} ${m[1]==='격파형태'?'격파':'상태'}`;
+ m=/^인접 ([\w-]+) ([\w-]+)$/.exec(text);if(m)return `${name(m[1])}: ${name(m[2])} 옆으로 이동`;
+ m=/^격파 수 (\d+)$/.exec(text);if(m)return `적 ${m[1]}기 격파`;
+ m=/^격파 (.+)$/.exec(text);if(m)return [...new Set(m[1].split(/\s*,\s*/).map(name))].join(' · ')+' 격파';
+ m=/^도달 ([\w-]+) (.+)$/.exec(text);if(m)return `${name(m[1])}: ${m[2]} 도달`;
+ return text;
+}
+export const rawObjectiveSyntax=(s:string)=>/&(?:amp|lt|gt|quot|#\d+);|(?:^| · )(?:형태|격파형태|인접|도달) [a-z][\w-]*| \& /.test(s);

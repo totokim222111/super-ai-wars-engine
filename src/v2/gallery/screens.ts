@@ -241,6 +241,7 @@ class SoundScreen extends Page {
     this.frame('소리', '↑↓ 선택 · Enter로 듣기 · Esc 뒤로');
     const { sound } = this.app;
     const about: Record<Sfx, string> = {
+      'ground-thud':'착지 충격', 'shield-clang':'방벽 반동', whip:'채찍', 'ice-break':'얼음 깨짐',electric:'방전',splash:'물보라',popup:'창 열림',stamp:'도장 타격',
       'cg-cold':'섬뜩한 삽화 · 저음',
       cursor: '메뉴 이동', confirm: '일반 결정', important:'중요 선택', cancel: '취소', deny: '안 됨', text: '대사 글자', whoosh: '화면 전환·돌진', slash: '베기',
       shot: '사격', hit: '타격', heavy: '결정타', explode: '격파', charge: '모으기', flash: '컷인·번쩍임', gauge: '게이지 감소', beam:'빔',missile:'미사일',transform:'변형·합체',servo:'서보',alarm:'경보',levelup:'레벨 업',

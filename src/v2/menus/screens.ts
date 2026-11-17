@@ -1,3 +1,5 @@
+import {largeUi,uiMetrics,readable} from '../presentation';
+import {GridMenu} from '../grid-menu';
 import { preloadImages } from '../pack/images';
 import { term } from '../terms';
 /**
@@ -14,7 +16,7 @@ import { term } from '../terms';
  */
 import { ConfirmScreen } from '../dialogs';
 import { ease, tween, wait, type Step } from '../flow';
-import { hintBar, label, MenuList, toast, windowFrame, type MenuItem } from '../kit';
+import { Button,hintBar, label, MenuList, toast, windowFrame, type MenuItem } from '../kit';
 import { Screen } from '../screen';
 import { H, Shape, Sprite, W } from '../stage';
 import { COLOR, cover, FONT, plate } from '../ui';
@@ -27,20 +29,20 @@ export function fundsChip(amount: number): Shape<{ amount: number }> {
   return new Shape({ amount }, (ctx, s) => {
     plate(ctx, 0, 0, 300, 40, 'rgba(7,11,26,.86)', 'right');
     ctx.fillStyle = COLOR.gold; ctx.fillRect(0, 0, 6, 40);
-    ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `700 17px ${FONT.body}`; ctx.fillStyle = COLOR.dim; ctx.fillText(term('funds'), 22, 21);
-    ctx.textAlign = 'right'; ctx.font = `700 24px ${FONT.num}`; ctx.fillStyle = COLOR.ink; ctx.fillText(money(Math.round(s.amount)), 262, 22);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `700 ${readable(17)}px ${FONT.body}`; ctx.fillStyle = COLOR.dim; ctx.fillText(term('funds'), 22, 21);
+    ctx.textAlign = 'right'; ctx.font = `700 ${readable(24)}px ${FONT.num}`; ctx.fillStyle = COLOR.ink; ctx.fillText(money(Math.round(s.amount)), 262, 22);
   });
 }
 
 /** 메뉴 화면의 공통 머리말과 바닥을 올린다. 자금 표시를 돌려준다(쓰지 않는 화면은 funds를 비운다). */
 export function menuFrame(screen: Screen, options: { title: string; hint: string; background?: HTMLImageElement; funds?: number; onBack?: () => void; navigation?:'close'|'back' }): Shape<{ amount: number }> | undefined {
-  const { stage, ui } = screen;
-  stage.back.add(Object.assign(new Sprite(options.background, H * 1.12), { x: W / 2, y: H / 2 }));
+  screen.responsiveMenu();const { stage, ui } = screen;
+  if(options.background)stage.back.add(Object.assign(new Sprite(options.background,H*1.12),{x:W/2,y:H/2}));
   stage.back.add(cover('rgba(5,8,22,.84)'));
-  if(options.navigation==='close')stage.ui.add(Object.assign(windowFrame(options.title,1232,584,{inside:true}),{x:24,y:80}));
-  if(options.navigation!=='close')stage.ui.add(Object.assign(label(options.title, 40, { display: true }), { x: 40, y: 18 }));
+  if(options.navigation==='close')stage.ui.add(Object.assign(windowFrame(options.title,1232,610,{inside:true}),{x:24,y:80}));
+  if(options.navigation!=='close'){stage.ui.add(Object.assign(label(options.title,36,{display:true,weight:900}),{x:40,y:20}));stage.ui.add(new Shape({},ctx=>{ctx.fillStyle=COLOR.gold;ctx.fillRect(40,68,80,3);}));}
   stage.ui.add(hintBar(options.hint));
-  if (options.onBack) { ui.setNavigation({kind:options.navigation??'back',onBack:options.onBack}); }
+  if (options.onBack) { ui.setNavigation({kind:options.navigation??'back',onBack:options.onBack,...(options.navigation==='close'?{}:{bounds:{x:0,y:0,w:1280,h:720}})}); }
   if (options.funds === undefined) return undefined;
   return stage.ui.add(Object.assign(fundsChip(options.funds), { x: 40, y: 74 }));
 }
@@ -62,7 +64,7 @@ export class TitleScreen extends Screen {
   constructor(private readonly options: TitleOptions) { super(); this.music = options.music; }
   prepare():Promise<void>|void{return preloadImages([this.options.background,this.options.art]);}
   enter(): void {
-    const { stage, ui, options } = this;
+    this.responsiveMenu();const { stage, ui, options } = this;
     const background = stage.back.add(Object.assign(new Sprite(options.background, H * 1.22), { x: W / 2 + 40, y: H / 2 }));
     stage.back.add(new Shape<object>({}, ctx => {
       // 글자가 얹히는 왼쪽을 어둡게 눌러 준다.
@@ -73,7 +75,7 @@ export class TitleScreen extends Screen {
     const art = stage.world.add(Object.assign(new Sprite(options.art, 700).trimToContent(), { anchorY: 1, x: 1010, y: H + 8, alpha: 0 }));
     // 제목: 글자 뒤에 비스듬한 띠, 위로 빛이 한 번 훑고 지나간다.
     const title = stage.ui.add(new Shape({ shine: -0.3 }, (ctx, s) => {
-      ctx.font = `104px ${FONT.display}`;
+      ctx.font = `${readable(104)}px ${FONT.display}`;
       const width = ctx.measureText(options.title).width;
       ctx.save(); plate(ctx, -40, 16, width + 150, 116, COLOR.ally, 'right'); ctx.clip();
       const glint = ctx.createLinearGradient((width + 150) * s.shine - 90, 0, (width + 150) * s.shine + 90, 0);
@@ -82,13 +84,13 @@ export class TitleScreen extends Screen {
       ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ctx.fillStyle = '#06112e'; ctx.fillText(options.title, 30, 82);
       ctx.fillStyle = '#fff'; ctx.fillText(options.title, 30, 76);
-      ctx.font = `700 24px ${FONT.body}`; ctx.fillStyle = COLOR.gold; ctx.fillText(options.subtitle, 34, 164);
+      ctx.font = `700 ${readable(24)}px ${FONT.body}`; ctx.fillStyle = COLOR.gold; ctx.fillText(options.subtitle, 34, 164);
     }));
     Object.assign(title, { x: -700, y: 70 });
-    const menu = ui.add(Object.assign(new MenuList(options.items, index => options.items[index].run(), { w: 400, rowHeight: 58, tap: 'choose' }), { x: 70, y: 300, alpha: 0 }));
+    const menu = ui.add(Object.assign(largeUi()?new GridMenu(options.items,index=>options.items[index].run(),{w:700,columns:2,rows:3}):new MenuList(options.items,index=>options.items[index].run(),{w:400,rows:6,rowHeight:58,maxHeight:370,tap:'choose'}), { x: 70, y: 300, alpha: 0 }));
     stage.ui.add(hintBar('↑↓ 선택 · Enter 결정 · 화면을 눌러도 됩니다'));
     if(options.footer)stage.ui.add(new Shape({},ctx=>{
-      ctx.font=`17px ${FONT.body}`;ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.font=`${readable(17)}px ${FONT.body}`;ctx.textAlign='right';ctx.textBaseline='middle';
       ctx.lineWidth=4;ctx.strokeStyle='rgba(3,7,18,.9)';
       ctx.strokeText(options.footer!,W-24,H-76);
       ctx.fillStyle='#c0c8d9';ctx.fillText(options.footer!,W-24,H-76);
@@ -123,16 +125,18 @@ export class IntermissionScreen extends Screen {
     const { stage, ui, model, look } = this, hub = model.hub(), entries = model.entries();
     this.funds = menuFrame(this, { title: '인터미션', hint: '↑↓ 선택 · Enter 결정', background: look.background, funds: hub.funds });
     stage.world.add(Object.assign(new Sprite(look.art, 660).trimToContent(), { anchorY: 1, x: 1100, y: H + 8 }));
-    // 다음 화 안내
-    stage.ui.add(Object.assign(windowFrame('다음 출격', 360, 150), { x: 500, y: 156 }));
-    stage.ui.add(Object.assign(label(hub.next, 28, { weight: 900, width: 320 }), { x: 524, y: 184 }));
-    stage.ui.add(Object.assign(label(`지난 화 · ${hub.chapter}`, 18, { color: COLOR.dim, width: 320 }), { x: 524, y: 278 }));
-    const about = stage.ui.add(Object.assign(label(entries[0]?.about ?? '', 22, { color: COLOR.dim, width: 330 }), { x: 506, y: 336 }));
-    const items: MenuItem[] = entries.map(e => ({ label: e.label, disabled: e.disabled }));
-    ui.add(Object.assign(new MenuList(items, index => {
-      const run = this.routes[entries[index].id];
-      if (run) run(); else toast(this, '아직 준비 중입니다');
-    }, { w: 410, rows: Math.min(entries.length, 9), rowHeight: 54, onMove: index => { about.state.text = entries[index].about; } }), { x: 50, y: 136 }));
+    const desc:Record<string,string>={sortie:'준비를 마치고 다음 이야기로 갑니다',upgrade:'크레딧으로 기체와 무기를 강화합니다',pilot:'RLHF로 파일럿의 능력과 기술을 올립니다',parts:'기체에 강화 부품을 끼웁니다',shop:'소모품과 플러그인을 삽니다',save:'지금 상태를 저장합니다',load:'저장한 진행을 불러옵니다',settings:'소리와 화면·연출 설정을 바꿉니다'};
+    if(entries.find(e=>e.id==='sortie')?.label==='재출격')desc.sortie='실패한 화에 다시 출격합니다';
+    const about=stage.ui.add(Object.assign(label(desc[entries[0]?.id]??entries[0]?.about??'',26,{width:390}),{x:806,y:286}));
+    stage.ui.add(Object.assign(windowFrame('다음 출격',420,232),{x:780,y:156}));stage.ui.add(Object.assign(label(hub.next,28,{weight:900,width:365}),{x:806,y:180}));
+    const menuEntries=largeUi()?entries.filter(e=>e.id!=='sortie'):entries;
+    const choose=(index:number)=>{const run=this.routes[menuEntries[index].id];if(run)run();else toast(this,'아직 준비 중입니다');};
+    const move=(index:number)=>{about.state.text=desc[menuEntries[index].id]??menuEntries[index].about;};
+    const items:MenuItem[]=menuEntries.map(e=>({label:e.label,disabled:e.disabled}));
+    const menu=largeUi()?new GridMenu(items,choose,{w:700,columns:2,rows:4,onMove:move}):new MenuList(items,choose,{w:410,rows:8,rowHeight:54,maxHeight:470,onMove:move});
+    ui.add(Object.assign(menu,{x:50,y:136}));
+    if(largeUi()){const next=entries.find(e=>e.id==='sortie');if(next){const go=ui.add(Object.assign(new Button(next.label,()=>this.routes.sortie?.(),{w:390,h:84,kind:'main'}),{x:810,y:440}));go.danger=true;ui.focusOn(go,true);}}
+
   }
   /** 다른 화면에서 돌아왔을 때 자금을 다시 읽는다. */
   resume(): void { if (this.funds) this.funds.state.amount = this.model.funds(); }
@@ -146,21 +150,22 @@ export class UpgradeScreen extends Screen {
   enter(): void {
     const { stage, ui, model } = this, units = model.upgradeUnits();
     const funds = menuFrame(this, { title: '기체 개조', hint: '←→ 목록 이동 · ↑↓ 선택 · Enter로 한 단계 개조 · Esc 뒤로', background: this.look.background, funds: model.funds(), onBack: () => this.app.pop() })!;
-    if (this.look.temporary) stage.ui.add(Object.assign(label('임시 그림 포함', 17, { color: COLOR.gold, align: 'right' }), { x: 1200, y: 82 }));
+    
     let unit: UpgradeUnit | undefined = units[0];let selectedStat=0;
-    const weaponList=ui.add(Object.assign(new MenuList([],()=>undefined,{w:610,rows:3,rowHeight:28,pagerHeight:20,dynamic:true,tap:'select'}),{x:430,y:508,visible:false,canFocus:false}));
-    const refreshWeapons=()=>{weaponList.visible=unit?.stats[selectedStat]?.id==='weapons';weaponList.setItems((unit?.weapons??[]).map(w=>({label:w.name,labelSize:17,valueSize:17,value:w.next===undefined?String(w.value):`${w.value} → ${w.next}`})));};
+    const weaponList=ui.add(Object.assign(new MenuList([],()=>undefined,{w:610,rows:4,rowHeight:40,pagerHeight:uiMetrics().pager,maxHeight:240,dynamic:true,tap:'select'}),{x:430,y:460,visible:false,canFocus:false}));
+    const refreshWeapons=()=>{weaponList.visible=!largeUi()&&unit?.stats[selectedStat]?.id==='weapons';weaponList.setItems((unit?.weapons??[]).map(w=>({label:w.name,labelSize:17,valueSize:17,value:w.next===undefined?String(w.value):`${w.value} → ${w.next}`})));};
     // 고른 기체의 그림. 기체를 바꾸면 그림이 미끄러져 들어온다.
-    const art = stage.world.add(Object.assign(new Sprite(unit?.image, 220).trimToContent(), { anchorY: 1, x: 1100, y: 397 }));
+    const art = stage.world.add(Object.assign(new Sprite(unit?.image, largeUi()?0:220).trimToContent(), { anchorY: 1, x: 1100, y: 397 }));
     const name = stage.ui.add(Object.assign(label('', 30, { weight: 900 }), { x: 440, y: 132 }));
     const rows = (target: UpgradeUnit): MenuItem[] => target.stats.map(s => ({
-      label: s.label,labelSize:21,pips: { level: s.level, max: s.max },
-      value:s.id==='weapons'?`전체 무장 · ${s.cost===undefined?'최대':money(s.cost)}`: s.cost === undefined ? `${s.value}  ·  최대` : `${s.value} → ${s.next}  ·  ${money(s.cost)}`,
+      label:s.id==='weapons'?'무기 개조':s.label,labelSize:21,pips: { level: s.level, max: s.max },
+      value:s.id==='weapons'?`전체 무장 · ${s.cost===undefined?'최대':money(s.cost)+' '+term('funds')}`: s.cost === undefined ? `${s.value}  ·  최대` : `${s.value} → ${s.next}  ·  ${money(s.cost)+' '+term('funds')}`,
       disabled: s.cost === undefined,
     }));
     const stats = new MenuList(unit ? rows(unit) : [], index => {
       const target = unit, stat = target?.stats[index];
       if (!target || !stat || stat.cost === undefined) return;
+      if(largeUi()&&stat.id==='weapons'){this.app.push(new WeaponUpgradeScreen(model,target.id,()=>{unit=model.upgradeUnits().find(u=>u.id===target.id);if(unit)stats.setItems(rows(unit));funds.state.amount=model.funds();}));return;}
       if (stat.cost > model.funds()) { this.app.sound.play('deny'); toast(this, `${term('funds')}이 부족합니다`); return; }
       this.app.push(new ConfirmScreen(`${target.name}의 ${stat.label}을(를)\n${stat.level + 1}단계로 올릴까요?  (${money(stat.cost)})`, () => {
         if (!model.upgrade(target.id, stat.id)) { toast(this, '개조하지 못했습니다'); return; }
@@ -171,7 +176,7 @@ export class UpgradeScreen extends Screen {
         this.app.sound.play('gauge');
         toast(this, `${stat.label} ${stat.level + 1}단계`);
       }), 'none');
-    }, { w: 520,rows:5,rowHeight:56,onMove:i=>{selectedStat=i;refreshWeapons();},previewFirst:true });
+    }, { w: largeUi()?760:600,rows:5,rowHeight:56,maxHeight:largeUi()?470:310,onMove:i=>{selectedStat=i;refreshWeapons();},previewFirst:true });
     const show = (target: UpgradeUnit | undefined): void => {
       unit = target;
       if (!target) return;
@@ -181,8 +186,17 @@ export class UpgradeScreen extends Screen {
       art.image = target.image; art.x = 1180; art.alpha = 0;
       this.run(tween(art, { x: 1120, alpha: 1 }, 0.22));
     };
-    ui.add(Object.assign(new MenuList(units.map(u => ({ label: u.name, description: u.pilot, labelSize: 22 })), () => ui.focusOn(stats), { w: 370, rows: Math.min(units.length, 6), rowHeight: 76, onMove: index => show(model.upgradeUnits()[index]) }), { x: 40, y: 132 }));
-    ui.add(Object.assign(stats, { x: 430, y: 180 }));
+    ui.add(Object.assign(new MenuList(units.map(u => ({ label: u.name, description: u.pilot, labelSize: 22 })), () => ui.focusOn(stats), { w:370,rows:Math.min(units.length,6),rowHeight:76,maxHeight:470, onMove: index => show(model.upgradeUnits()[index]) }), { x: 40, y: 132 }));
+    ui.add(Object.assign(stats, {x:430,y:170}));
     show(unit);
   }
+}
+
+class WeaponUpgradeScreen extends Screen{
+ constructor(private readonly model:CampaignModel,private readonly unitId:string,private readonly changed:()=>void){super();}
+ enter():void{const unit=this.model.upgradeUnits().find(u=>u.id===this.unitId)!;const stat=unit.stats.find(s=>s.id==='weapons')!;
+ menuFrame(this,{title:unit.name+' · 무기 개조',hint:'모든 무장을 함께 강화합니다',funds:this.model.funds(),onBack:()=>this.app.pop()});
+ this.ui.add(Object.assign(new MenuList((unit.weapons??[]).map(w=>({label:w.name,value:w.next===undefined?String(w.value):`${w.value} → ${w.next}`,labelSize:24,valueSize:24})),()=>undefined,{w:1120,rows:4,rowHeight:100,maxHeight:440,tap:'select'}),{x:60,y:140}));
+ const go=this.ui.add(Object.assign(new Button(`${stat.level} → ${stat.level+1}단계 · ${stat.cost?.toLocaleString()} ${term('funds')}`,()=>this.app.push(new ConfirmScreen('모든 무장을 한 단계 개조할까요?',()=>{if(this.model.upgrade(unit.id,'weapons')){this.changed();this.app.replace(new WeaponUpgradeScreen(this.model,this.unitId,this.changed),'none');}else toast(this,'개조하지 못했습니다');}),'none'),{w:850,h:84,kind:'main'}),{x:60,y:610}));go.enabled=stat.cost!==undefined&&stat.cost<=this.model.funds();this.ui.focusOn(go,true);
+ }
 }
