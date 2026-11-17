@@ -1,4 +1,4 @@
-import {largeUi,readable,uiMetrics,touchInput} from './presentation';
+import {touchInput} from './presentation';
 /**
  * UI 부품. 모든 메뉴 화면은 여기 있는 부품의 조합으로만 만든다.
  *
@@ -68,15 +68,16 @@ export class Ui {
     const r = options.bounds ?? {x:24,y:80,w:1232,h:584};
     if (options.kind !== 'escape' && !options.cancelInContent) {
       const close = options.kind === 'close';
-      const button = new Button(close ? '✕' : '뒤로', run, {w:close?88:152,h:close?88:uiMetrics().button});
-      Object.assign(button,{x:r.x+r.w-button.w-8,y:close?r.y+8:!largeUi()&&r.h===720?596:r.y+r.h-button.h-8,z:110,canFocus:false});
+      const button = new Button(close ? '✕' : '뒤로', run, {w:close?88:152,h:88});
+      Object.assign(button,{x:r.x+r.w-button.w-8,y:close?r.y+8:r.y+r.h-96,z:110,canFocus:false});
       this.navigation.push(this.add(button));
     }
-    if (options.kind==='escape'&&options.esc!==false&&!options.cancelInContent) {
+    if (options.esc !== false) {
       const button = Object.assign(new EscapeButton(run),{x:W-80,y:8,z:120,canFocus:false});
       this.navigation.push(this.add(button));
     }
   }
+  textWidthFor(widget:Widget,localY:number,height:number):number {let width=widget.w;for(const b of this.navigation)if(b.visible&&b.x>widget.x&&b.y<widget.y+localY+height&&b.y+b.h>widget.y+localY)width=Math.min(width,b.x-widget.x-8);return width;}
   /** Popups must not mistake a local close/back press for a tap on the map underneath. */
   navigationContains(x:number,y:number):boolean {return this.navigation.some(w=>w.visible&&w.contains(x,y));}
   constructor(private readonly screen: Screen) {}
@@ -86,7 +87,7 @@ export class Ui {
   add<T extends Widget>(widget: T, layer: Layer = this.screen.stage.ui): T {
     layer.add(widget);
     widget.ui = this; this.widgets.push(widget);
-    if (!this.focus && widget.canFocus && widget.enabled) this.focusOn(widget, true);
+    if (!this.focus && widget.canFocus && widget.enabled && (!(widget instanceof MenuList)||widget.items.some(i=>!i.disabled))) this.focusOn(widget, true);
     return widget;
   }
   remove(widget: Widget): void {
@@ -107,7 +108,7 @@ export class Ui {
     if (event.kind === 'pointer') {
       const { phase, x, y } = event;
       // 나중에 올린 부품이 위에 있다.
-      const hit = [...this.widgets].reverse().find(w => (!only || only.includes(w)) && w.visible && w.contains(x, y));
+      const hit = [...this.widgets].sort((a,b)=>a.z-b.z).reverse().find(w => (!only || only.includes(w)) && w.visible && w.contains(x, y));
       if (phase === 'down') {
         this.captured = hit;
         if (hit?.canFocus && hit.enabled) this.focusOn(hit, true);
@@ -119,7 +120,7 @@ export class Ui {
       return !!(this.captured ?? hit);
     }
     const { action } = event;
-    if(event.wheel){if(this.focus instanceof MenuList)return this.focus.act(action);return false;}
+    if(event.wheel&&this.focus instanceof MenuList)return this.focus.act(action);
     if (this.focus && (!only || only.includes(this.focus)) && this.focus.act(action)) return true;
     if (action === 'cancel') { if (this.onCancel) { this.play('cancel'); this.onCancel(); return true; } return false; }
     if (action === 'up' || action === 'down' || action === 'left' || action === 'right') {
@@ -148,13 +149,13 @@ export class Ui {
 
 /** 누르는 버튼. kind가 main이면 그 화면의 주된 행동(파란색)이다. */
 export class Button extends Widget {
-  toggled=false;danger=false;
+  toggled=false;
   /** 비활성 버튼을 눌렀을 때 이유를 알려야 하는 화면에서만 지정한다. */
   onDenied?:()=>void;
   private armed = false;
   constructor(public label: string, private readonly onPress: () => void, options: { w?: number; h?: number; kind?: 'main' | 'plain' | 'back'; sound?:'confirm'|'important'|'cancel'; wrapLabel?: boolean } = {}) {
     super();
-    this.w = options.w ?? 220; this.h = Math.max(options.h ?? uiMetrics().button,largeUi()?84:0); this.kind = options.kind ?? 'plain'; this.wrapLabel = options.wrapLabel ?? false;this.sound=options.sound??'confirm';
+    this.w = options.w ?? 220; this.h = options.h ?? 54; this.kind = options.kind ?? 'plain'; this.wrapLabel = options.wrapLabel ?? false;this.sound=options.sound??'confirm';
   }
   private readonly kind: 'main' | 'plain' | 'back';
   private readonly wrapLabel: boolean;
@@ -178,52 +179,51 @@ export class Button extends Widget {
     // 바닥 그림자: 눌리면 가라앉아 줄어든다.
     cutPath(ctx, 4 - press * 3, 5 - press * 4, w, h, 12); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill();
     const body = ctx.createLinearGradient(0, 0, 0, h);
-    if (this.kind === 'main') { body.addColorStop(0, '#1b2b5c'); body.addColorStop(1, '#0a1230'); }
-    else if (this.kind === 'back') { body.addColorStop(0, '#1b2b5c'); body.addColorStop(1, '#0a1230'); }
+    if (this.kind === 'main') { body.addColorStop(0, '#4aa3ff'); body.addColorStop(1, '#1556b8'); }
+    else if (this.kind === 'back') { body.addColorStop(0, '#b3263c'); body.addColorStop(1, '#5a0e1c'); }
     else { body.addColorStop(0, '#1b2b5c'); body.addColorStop(1, '#0a1230'); }
     cutPath(ctx, 0, 0, w, h, 12); ctx.fillStyle = body; ctx.fill();
-    cutPath(ctx,0,0,w,h,12);ctx.strokeStyle=this.danger?'#cf697a':'#83a9d9';ctx.lineWidth=2;ctx.stroke();
-    if (this.focused || this.toggled) {
+    if (this.kind === 'back') {
+      // 뒤로 가기는 어디서든 눈에 띄어야 한다: 테두리가 천천히 숨 쉬듯 빛난다.
+      ctx.save(); ctx.globalAlpha *= 0.45 + Math.sin(this.clock * 3.2) * 0.3;
+      cutPath(ctx, -2, -2, w + 4, h + 4, 13); ctx.strokeStyle = '#ffd6dc'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+    }
+    if (glow > 0.01) {
       const lit = ctx.createLinearGradient(0, 0, 0, h);
       lit.addColorStop(0, '#fff0a8'); lit.addColorStop(1, '#f2b300');
-      ctx.save(); ctx.globalAlpha *= 1; cutPath(ctx, 0, 0, w, h, 12); ctx.fillStyle = lit; ctx.fill();
+      ctx.save(); ctx.globalAlpha *= glow; cutPath(ctx, 0, 0, w, h, 12); ctx.fillStyle = lit; ctx.fill();
       cutPath(ctx, -3, -3, w + 6, h + 6, 14); ctx.strokeStyle = '#fff6c9'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
     }
     // 윗면의 밝은 선과 광택
     ctx.fillStyle = `rgba(255,255,255,${0.35 + glow * 0.4})`; ctx.fillRect(12, 0, w - 12, 2);
     ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(4, 3, w - 8, h * 0.38);
-    let size = readable(this.label==='뒤로'?22:Math.min(30,Math.round(h*.42)));
+    if(!this.enabled)ctx.globalAlpha/=.4;
+    let size = Math.round(h * 0.42);
     ctx.font = `700 ${size}px ${FONT.body}`;
     const width = w - 32;
     let lines = this.wrapLabel ? wrap(ctx, this.label, width) : [this.label];
-    while (size > readable(14) && (this.wrapLabel ? lines.length > 2 : ctx.measureText(this.label).width > width)) {
+    while (size > 13 && (this.wrapLabel ? lines.length > 2 : ctx.measureText(this.label).width > width)) {
       ctx.font = `700 ${--size}px ${FONT.body}`;
       lines = this.wrapLabel ? wrap(ctx, this.label, width) : [this.label];
     }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = this.focused||this.toggled ? '#0a1024' : COLOR.ink;
+    ctx.fillStyle = glow > 0.5 ? '#0a1024' : !this.enabled ? '#aab6d0' : COLOR.ink;
     // Extremely long labels still remain within the button; ordinary labels retain their size.
     if (lines.length > 2) lines = [lines[0], lines.slice(1).join('')];
     lines.forEach((line, i) => ctx.fillText(line, w / 2, h / 2 + 1 + (i - (lines.length - 1) / 2) * (size + 2), width));
   }
 }
 
-/** Press-and-hold changes presentation speed only; releasing never changes saved speed. */
-export class HoldButton extends Button {
- constructor(text:string,private readonly held:(value:boolean)=>void,options:{w?:number;h?:number}={}){super(text,()=>{},options);}
- point(phase:'down'|'move'|'up',_x:number,_y:number):void{if(phase==='down')this.held(true);if(phase==='up')this.held(false);}
-}
-
 export interface NavigationRect {x:number;y:number;w:number;h:number}
 export type Navigation = {kind:'none'} | {kind:'close'|'back'|'escape';onBack:()=>void;bounds?:NavigationRect;esc?:boolean;cancelInContent?:boolean};
 /** Reserved corner: 88×72. Subtle fallback, deliberately separate from local navigation. */
 class EscapeButton extends Button {
-  constructor(run:()=>void){super('ESC',run,{w:largeUi()?88:72,h:largeUi()?68:56});}
-  protected paint(ctx:Ctx):void {cutPath(ctx,0,0,this.w,this.h,8);ctx.fillStyle='rgba(4,8,20,.65)';ctx.fill();ctx.strokeStyle='rgba(185,199,230,.45)';ctx.lineWidth=1;ctx.stroke();ctx.font=`700 ${readable(19)}px ${FONT.body}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=COLOR.dim;ctx.fillText('ESC',this.w/2,this.h/2);}
+  constructor(run:()=>void){super('ESC',run,{w:72,h:56});}
+  protected paint(ctx:Ctx):void {cutPath(ctx,0,0,this.w,this.h,8);ctx.fillStyle='rgba(4,8,20,.65)';ctx.fill();ctx.strokeStyle='rgba(185,199,230,.45)';ctx.lineWidth=1;ctx.stroke();ctx.font=`700 19px ${FONT.body}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=COLOR.dim;ctx.fillText('ESC',this.w/2,this.h/2);}
 }
 
 /** @property pips 단계 표시(개조 단계처럼 "10칸 중 3칸"). 값 글자 왼쪽에 칸으로 그려진다. */
-export interface MenuItem { sound?:'confirm'|'important'; badge?:string; singleDescription?:boolean; wrapLabel?: boolean; labelSize?: number; valueSize?:number; portrait?: Portrait; description?: string; label: string; value?: string; disabled?: boolean; pips?: { level: number; max: number } }
+export interface MenuItem { sound?:'confirm'|'important'; badge?:string; singleDescription?:boolean; wrapLabel?: boolean; labelSize?: number; valueSize?:number; portrait?: Portrait; description?: string; label: string; value?: string; disabled?: boolean; titleOffset?:number;descriptionOffset?:number; pips?: { level: number; max: number } }
 /**
  * 세로 메뉴. 로봇대전 메뉴의 뼈대다: 금색 띠가 고른 줄로 미끄러지고, 왼쪽에 화살표가 까딱인다.
  *
@@ -234,6 +234,9 @@ export interface MenuItem { sound?:'confirm'|'important'; badge?:string; singleD
  * 화면이 쪽 넘김을 따로 만들 필요는 없다.
  */
 export class MenuList extends Widget {
+  get readOnly(){return !this.canFocus;}
+  selectionPoint(){return{x:this.x+this.w/2,y:this.y+10+this.pager+(this.index-this.top+.5)*this.rowHeight};}
+  visibleItems(){return this.items.slice(this.top,this.top+this.rows);}
   index = 0;
   private bar = 0;       // 금색 띠의 현재 줄 위치(부드럽게 따라감)
   private top = 0;       // 맨 위에 보이는 줄
@@ -241,13 +244,13 @@ export class MenuList extends Widget {
   private downRow = -1;
   /** 누른 줄이 누르기 전에 이미 골라져 있었는가. 두 번 눌러 결정할 때 쓴다. */
   private downWasCurrent = false;
-  /** 터치·클릭 방식. 'confirm-selected': 첫 탭은 고르기만, 골라진 줄을 다시 누르면 결정.
-   *  'select': 탭은 고르기만 하고 결정은 따로 둔 버튼이 맡는다. 'choose': 탭 한 번에 결정(기본). */
+  /** 터치·클릭 방식. 'confirm-selected': 첫 탭은 고르기만, 골라진 줄을 다시 누르면 결정(기본).
+   *  'select': 탭은 고르기만 하고 결정은 따로 둔 버튼이 맡는다. 'choose': 탭 한 번에 결정(메뉴 이동용). */
   private readonly tap: 'confirm-selected' | 'select' | 'choose';
   private drag?: { y: number; top: number; moved: boolean };
-  protected rows: number;
+  private readonly rows: number;
   private readonly pagerHeight:number;
-  protected readonly rowHeight: number;
+  private readonly rowHeight: number;
   /** 쪽 넘김 줄 하나의 높이. 넘길 것이 없는 목록에서는 0이다. */
   private pager: number;
   private readonly dynamic: boolean;
@@ -255,22 +258,20 @@ export class MenuList extends Widget {
   private readonly previewFirst:boolean;
   private readonly onMove?: (index: number, item: MenuItem) => void;
   constructor(public items: MenuItem[], private readonly onChoose: (index: number, item: MenuItem) => void,
-    options: { w: number; rows?: number; rowHeight?: number; dynamic?: boolean; pagerHeight?:number; previewFirst?:boolean; onMove?: (index: number, item: MenuItem) => void; tap?: 'confirm-selected' | 'select' | 'choose';maxHeight?:number }) {
+    options: { w: number; rows?: number; rowHeight?: number; dynamic?: boolean; pagerHeight?:number; previewFirst?:boolean; onMove?: (index: number, item: MenuItem) => void; tap?: 'confirm-selected' | 'select' | 'choose';maxHeight?:number;readOnly?:boolean }) {
     super();
-    this.pagerHeight=Math.max(options.pagerHeight??uiMetrics().pager,largeUi()?84:0);this.previewFirst=options.previewFirst??false;this.dynamic = options.dynamic ?? false;
-    this.rows = this.dynamic ? options.rows ?? items.length : Math.min(options.rows ?? items.length, items.length); this.rowHeight = Math.max(options.rowHeight ?? uiMetrics().row,largeUi()?84:0);
+    this.pagerHeight=options.pagerHeight??38;this.previewFirst=options.previewFirst??false;this.dynamic = options.dynamic ?? false;
+    this.rows = this.dynamic ? options.rows ?? items.length : Math.min(options.rows ?? items.length, items.length); this.rowHeight = options.rowHeight ?? 52;
     this.pager = items.length > this.rows ? this.pagerHeight : 0;
-    const maxHeight=options.maxHeight??(largeUi()?450:undefined);if(maxHeight&&this.hypotheticalHeight(this.rows)>maxHeight){this.rows=Math.max(1,Math.min(this.rows,Math.floor((maxHeight-20-this.pagerHeight*2)/this.rowHeight)));this.pager=items.length>this.rows?this.pagerHeight:0;}
-    this.w = options.w; this.h = this.rows * this.rowHeight + 20 + this.pager * 2; this.onMove = options.onMove; this.tap = options.tap ?? 'choose';this.index=Math.max(0,items.findIndex(i=>!i.disabled));this.bar=this.index;
+    this.index=Math.max(0,items.findIndex(i=>!i.disabled));this.bar=this.index;this.w = options.w; this.h = this.rows * this.rowHeight + 20 + this.pager * 2; this.onMove = options.onMove; this.tap = options.tap ?? 'choose';
   }
-  private hypotheticalHeight(rows:number):number{return rows*this.rowHeight+20+(this.items.length>rows?this.pagerHeight*2:0);}
   /** 항목을 통째로 바꾼다(탭을 바꿨을 때 등). */
-  setItems(items: MenuItem[]): void { if (this.dynamic) { this.pager = items.length > this.rows ? this.pagerHeight : 0; this.h = this.rows * this.rowHeight + 20 + this.pager * 2; } this.items = items; this.index = Math.min(this.index, Math.max(0, items.length - 1)); this.top = 0; if(items[this.index]?.disabled)this.index=Math.max(0,items.findIndex(i=>!i.disabled));this.bar=this.index; }
+  setItems(items: MenuItem[]): void { if (this.dynamic) { this.pager = items.length > this.rows ? this.pagerHeight : 0; this.h = this.rows * this.rowHeight + 20 + this.pager * 2; } this.items = items; this.index = Math.min(this.index, Math.max(0, items.length - 1)); this.top = 0;if(items[this.index]?.disabled)this.index=Math.max(0,items.findIndex(i=>!i.disabled)); }
   private get last(): number { return Math.max(0, this.items.length - this.rows); }
   private move(to: number, silent = false): void {
     const count = this.items.length;
     if (!count) return;
-    let next=(to+count)%count;const direction=to<this.index?-1:1;for(let tries=0;tries<count&&this.items[next]?.disabled;tries++)next=(next+direction+count)%count;if(this.items[next]?.disabled)return;
+    let next = (to + count) % count;const direction=to<this.index?-1:1;for(let n=0;n<count&&this.items[next]?.disabled;n++)next=(next+direction+count)%count;if(this.items[next]?.disabled)return;
     if (next === this.index) return;
     this.index = next;
     if (next < this.top) this.top = next;
@@ -286,7 +287,6 @@ export class MenuList extends Widget {
     const index = Math.max(next, Math.min(next + this.rows - 1, this.index));
     if (index !== this.index) { this.index = index; this.onMove?.(index, this.items[index]); }
   }
-  selectionPoint():{x:number;y:number}{return{x:this.x+100,y:this.y+10+this.pager+(this.index-this.top+.5)*this.rowHeight};}
   private choose(): void {
     const item = this.items[this.index];
     if (!item || item.disabled) { this.ui.play('deny'); return; }
@@ -306,12 +306,12 @@ export class MenuList extends Widget {
     return row >= this.top && row < Math.min(this.items.length, this.top + this.rows) ? row : undefined;
   }
   point(phase: 'down' | 'move' | 'up', x: number, y: number): void {
-    const spot = this.spot(y), row = typeof spot === 'number' ? spot : -1;
-    if (phase === 'down') { this.downRow = row; this.downWasCurrent = row >= 0 && row === this.index&&(!this.previewFirst||this.pointerPreview===row);if(row>=0){this.pointerPreview=row;this.onMove?.(row,this.items[row]);} this.drag = { y, top: this.top, moved: false }; if(row>=0&&!this.items[row]?.disabled)this.move(row); return; }
+    const spot = this.spot(y), row = typeof spot === 'number'&&!this.items[spot]?.disabled ? spot : -1;
+    if (phase === 'down') { this.downRow = row; this.downWasCurrent = row >= 0 && row === this.index&&(!this.previewFirst||this.pointerPreview===row);if(row>=0){this.pointerPreview=row;this.onMove?.(row,this.items[row]);} this.drag = { y, top: this.top, moved: false }; if (row >= 0) this.move(row); return; }
     if (phase === 'move') {
       const drag = this.drag;
       if (drag && this.pager && Math.abs(y - drag.y) > 14) { drag.moved = true; this.scrollTo(drag.top - Math.round((y - drag.y) / this.rowHeight)); }
-      else if (!drag && row >= 0) {this.pointerPreview=row;if(!this.items[row]?.disabled)this.move(row);this.onMove?.(row,this.items[row]);}   // 마우스를 올리기만 했을 때
+      else if (!drag && row >= 0) {this.pointerPreview=row;this.move(row);this.onMove?.(row,this.items[row]);}   // 마우스를 올리기만 했을 때
       return;
     }
     const dragged = this.drag?.moved;
@@ -321,7 +321,7 @@ export class MenuList extends Widget {
       const before = this.top;
       this.scrollTo(this.top + (spot === 'next' ? this.rows : -this.rows));
       this.ui.play(before === this.top ? 'deny' : 'cursor');
-    } else if(this.contains(x,y)&&row>=0&&row===this.downRow){if(this.items[row]?.disabled){this.ui.play('deny');this.downRow=-1;return;}this.move(row, true); if (this.tap === 'choose' || (this.tap === 'confirm-selected' && this.downWasCurrent)) this.choose(); }
+    } else if (this.contains(x, y) && row >= 0 && row === this.downRow) { this.move(row, true); if (this.tap === 'choose' || (this.tap === 'confirm-selected' && this.downWasCurrent)) this.choose(); }
     this.downRow = -1;
   }
   tick(dt: number): void {
@@ -336,29 +336,29 @@ export class MenuList extends Widget {
     ctx.beginPath(); ctx.rect(0, pad, w, h - pad * 2); ctx.clip();
     const offset = pad - this.shownTop * rowHeight;
     // 금색 띠: 포커스가 다른 부품에 있으면 흐려져 "여긴 지금 안 고르는 중"임을 알린다.
-    const barY = offset + this.index * rowHeight + 4, lit = ctx.createLinearGradient(0, 0, w, 0);
+    const barY = offset + this.bar * rowHeight + 4, lit = ctx.createLinearGradient(0, 0, w, 0);
     lit.addColorStop(0, '#ffe27a'); lit.addColorStop(0.7, '#f2b300'); lit.addColorStop(1, 'rgba(242,179,0,.15)');
-    ctx.save(); ctx.globalAlpha *= this.items[this.index]?.disabled?0:this.focused?1:0; plate(ctx, 8, barY, w - 16, rowHeight-(largeUi()?16:8), '#000', 'right'); ctx.clip(); ctx.fillStyle = lit; ctx.fillRect(8, barY, w - 16, rowHeight - 8);
+    ctx.save(); ctx.globalAlpha *= 0.28 + glow * 0.72; plate(ctx, 8, barY, w - 16, rowHeight - 8, '#000', 'right'); ctx.clip(); ctx.fillStyle = lit; ctx.fillRect(8, barY, w - 16, rowHeight - 8);
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(8, barY, w - 16, 3); ctx.restore();
     ctx.textBaseline = 'middle';
     this.items.forEach((item, i) => {
-      const y = offset + i * rowHeight + rowHeight / 2 + 1, chosen = i === this.index && this.focused;
+      const y = offset + i * rowHeight + rowHeight / 2 + 1, available=this.ui?.textWidthFor(this,y-rowHeight/2,rowHeight)??w, chosen = i === this.index && this.focused;
       if (y < -rowHeight || y > h + rowHeight) return;
-      ctx.font = `700 ${readable(item.labelSize ?? Math.min(28,Math.round(rowHeight * 0.44)))}px ${FONT.body}`; ctx.textAlign = 'left';
-      ctx.fillStyle = chosen ? '#0b1530' : item.disabled ? '#6b7896' : COLOR.ink;
-      const left = item.portrait ? 46+rowHeight*.8+16 : 50;
+      ctx.font = `700 ${item.labelSize ?? Math.round(rowHeight * 0.44)}px ${FONT.body}`; ctx.textAlign = 'left';
+      ctx.fillStyle = chosen ? '#0a1024' : item.disabled ? '#aab6d0' : COLOR.ink;
+      const left = item.portrait ? 108 : 50;
       if (item.portrait) {ctx.save();drawFace(ctx, item.portrait, 'default', 46, y - rowHeight * 0.4, rowHeight * 0.8);ctx.restore();}
-      let badgeWidth=0;if(item.badge){ctx.save();ctx.font=`700 ${readable(22)}px ${FONT.body}`;badgeWidth=ctx.measureText(item.badge).width+24;plate(ctx,w-28-badgeWidth,y-rowHeight*.2-13,badgeWidth,26,chosen?'#344265':'#243252','right');ctx.fillStyle='#ffe4aa';ctx.textAlign='center';ctx.fillText(item.badge,w-28-badgeWidth/2,y-rowHeight*.2);ctx.restore();}
-      if(item.singleDescription){let size=readable(item.labelSize??22);while(size>readable(14)&&ctx.measureText(item.label).width>w-left-44-badgeWidth)ctx.font=`700 ${--size}px ${FONT.body}`;ctx.fillText(item.label,left,y-rowHeight*.2,w-left-44-badgeWidth);}else if(item.wrapLabel){const lines=wrap(ctx,item.label,w-left-32);lines.slice(0,2).forEach((line,row)=>ctx.fillText(line,left,y+(item.description?-rowHeight*.27+row*24:(row-(Math.min(2,lines.length)-1)/2)*28)));}else {const reserve=item.value?Math.max(80,ctx.measureText(item.value).width+24):0;ctx.fillText(item.label,left,item.description?y-rowHeight*.2:y,w-left-Math.max(48,rowHeight*.3+16)-reserve);}
+      let badgeWidth=0;if(item.badge){ctx.save();ctx.font=`700 14px ${FONT.body}`;badgeWidth=ctx.measureText(item.badge).width+24;plate(ctx,w-28-badgeWidth,y-rowHeight*.2-13,badgeWidth,26,chosen?'#344265':'#243252','right');ctx.fillStyle='#ffe4aa';ctx.textAlign='center';ctx.fillText(item.badge,w-28-badgeWidth/2,y-rowHeight*.2);ctx.restore();}
+      if(item.singleDescription){let size=item.labelSize??22;while(size>14&&ctx.measureText(item.label).width>w-left-44-badgeWidth)ctx.font=`700 ${--size}px ${FONT.body}`;ctx.fillText(item.label,left,y-rowHeight*.2,w-left-44-badgeWidth);}else if(item.wrapLabel){const lines=wrap(ctx,item.label,w-left-32);lines.slice(0,2).forEach((line,row)=>ctx.fillText(line,left,y+(item.description?-rowHeight*.27+row*24:(row-(Math.min(2,lines.length)-1)/2)*28)));}else ctx.fillText(item.label, left, item.description ? y - rowHeight * 0.2+(item.titleOffset??0) : y,available-left-32-(item.value?Math.min(240,ctx.measureText(item.value).width+18):0));
       if (item.description) {
-        ctx.font = `${chosen?700:500} ${readable(Math.max(16, Math.round(rowHeight * 0.23)))}px ${FONT.body}`;
+        ctx.font = `500 ${Math.max(16, Math.round(rowHeight * 0.23))}px ${FONT.body}`;
         ctx.fillStyle = chosen ? '#172344' : COLOR.dim;
-        if(item.singleDescription){let size=largeUi()?24:readable(22);ctx.font=`${chosen?700:500} ${size}px ${FONT.body}`;while(size>(largeUi()?24:readable(20))&&ctx.measureText(item.description).width>w-left-32)ctx.font=`${chosen?700:500} ${--size}px ${FONT.body}`;ctx.fillText(item.description,left,y+13,w-left-32);}
-        const lines = item.singleDescription?[]:wrap(ctx, item.description, w - left - 32);
-        lines.slice(0, 2).forEach((line, row) => ctx.fillText(line, left, y + 12 + row * 21));
+        if(item.singleDescription){let size=16;while(size>12&&ctx.measureText(item.description).width>w-left-32)ctx.font=`500 ${--size}px ${FONT.body}`;ctx.fillText(item.description,left,y+13,w-left-32);}
+        const lines = item.singleDescription?[]:wrap(ctx, item.description, available - left - 32);
+        lines.slice(0, 2).forEach((line, row) => ctx.fillText(line, left, y + 12 + row * 21+(item.descriptionOffset??0)));
       }
-      let right = w - Math.max(48,rowHeight*.3+16);
-      if (item.value) {ctx.fillStyle=chosen?'#0b1530':item.disabled?'#6b7896':COLOR.dim; ctx.textAlign = 'right'; ctx.font = `700 ${readable(item.valueSize??Math.min(27,Math.round(rowHeight * 0.4)))}px ${FONT.num}`; ctx.fillText(item.value,right,item.badge?y+Math.min(18,rowHeight*.27):y); right -= ctx.measureText(item.value).width + 18; }
+      let right = available - 26;
+      if (item.value) { ctx.textAlign = 'right'; ctx.font = `700 ${item.valueSize??Math.round(rowHeight * 0.4)}px ${FONT.num}`; ctx.fillStyle=chosen?'#0a1024':item.disabled?'#aab6d0':COLOR.ink;ctx.fillText(item.value, right, y); right -= ctx.measureText(item.value).width + 18; }
       if (item.pips) {
         // 단계 칸: 채운 칸은 밝게, 빈 칸은 어둡게.
         const gap=2,size=Math.min(11,Math.max(3,(150-(item.pips.max-1)*gap)/item.pips.max)),total=item.pips.max*(size+gap)-gap;
@@ -370,22 +370,22 @@ export class MenuList extends Widget {
     });
     // 까딱이는 화살표
     const arrowY = offset + this.bar * rowHeight + rowHeight / 2, nudge = Math.sin(this.clock * 9) * 3 * glow;
-    ctx.fillStyle = !this.focused||this.items[this.index]?.disabled?'transparent':glow > 0.5 ? '#0a1024' : COLOR.gold; ctx.beginPath();
+    ctx.fillStyle = glow > 0.5 ? '#0a1024' : COLOR.gold; ctx.beginPath();
     ctx.moveTo(22 + nudge, arrowY - 9); ctx.lineTo(38 + nudge, arrowY); ctx.lineTo(22 + nudge, arrowY + 9); ctx.closePath(); ctx.fill();
     ctx.restore();
     if (!pager) return;
     // 쪽 넘김 줄: 넘길 쪽이 있으면 밝게 까딱이고, 없으면 흐리다. 가운데에는 지금 몇 번째를 보고 있는지 적는다.
     const more = [this.top > 0, this.top < this.last], bob = Math.sin(this.clock * 5) * 2.5;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `700 ${readable(17)}px ${FONT.body}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `700 17px ${FONT.body}`;
     [[6, '▲ 이전'], [h - pager - 6, '▼ 다음']].forEach(([y, text], i) => {
-      const top = y as number, on = more[i];
-      ctx.fillStyle = on ? '#18284c' : 'rgba(255,255,255,.05)'; ctx.fillRect(10, top, w - 20, pager);
+      const top = y as number, on = more[i],width=this.ui?.textWidthFor(this,top,pager)??w;
+      ctx.fillStyle = on ? 'rgba(255,210,63,.2)' : 'rgba(255,255,255,.05)'; ctx.fillRect(10, top, w - 20, pager);
       if (on) { ctx.fillStyle = COLOR.gold; ctx.fillRect(10, i ? top + pager - 2 : top, w - 20, 2); }
-      ctx.fillStyle = on ? COLOR.gold : 'rgba(185,199,230,.35)';
-      ctx.fillText(text as string, w / 2, top + pager / 2 + 1 + (on ? (i ? bob : -bob) : 0));
+      ctx.fillStyle = on ? COLOR.gold : '#8390aa';
+      ctx.fillText(text as string, width / 2, top + pager / 2 + 1 + (on ? (i ? bob : -bob) : 0));
     });
-    ctx.textAlign = 'right'; ctx.font = `700 ${readable(14)}px ${FONT.num}`; ctx.fillStyle = COLOR.dim;
-    ctx.fillText(`${this.top + 1}-${Math.min(this.items.length, this.top + this.rows)} / ${this.items.length}`, w - 18, h - pager / 2 - 5);
+    ctx.textAlign = 'right'; ctx.font = `700 14px ${FONT.num}`; ctx.fillStyle = COLOR.dim;
+    ctx.fillText(`${this.top + 1}-${Math.min(this.items.length, this.top + this.rows)} / ${this.items.length}`, (this.ui?.textWidthFor(this,h-pager,pager)??w)-18, h - pager / 2 - 5);
   }
 }
 
@@ -394,7 +394,7 @@ export class Tabs extends Widget {
   index = 0;
   constructor(public labels: string[], private readonly onChange: (index: number) => void, options: { w: number; h?: number }) {
     super();
-    this.w = options.w; this.h = Math.max(options.h ?? uiMetrics().tab,largeUi()?84:0);
+    this.w = options.w; this.h = options.h ?? 46;
   }
   private select(to: number): void {
     const next = (to + this.labels.length) % this.labels.length;
@@ -407,18 +407,18 @@ export class Tabs extends Widget {
     return false;
   }
   point(phase: 'down' | 'move' | 'up', x: number): void {
-    if(phase==='up'){const gap=largeUi()?16:4,each=(this.w-gap*(this.labels.length-1))/this.labels.length;for(let i=0;i<this.labels.length;i++)if(x>=this.x+i*(each+gap)&&x<=this.x+i*(each+gap)+each){this.select(i);break;}}
+    if (phase === 'up' && x >= this.x && x <= this.x + this.w) this.select(Math.floor((x - this.x) / (this.w / this.labels.length)));
   }
   protected paint(ctx: Ctx): void {
-    const { w, h, glow } = this,gap=largeUi()?16:4,each=(w-gap*(this.labels.length-1))/this.labels.length;
+    const { w, h, glow } = this, each = w / this.labels.length;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `700 ${Math.round(h * 0.44)}px ${FONT.body}`;
     this.labels.forEach((label, i) => {
-      const x = i * (each+gap), active = i === this.index;
-      plate(ctx, x + 2, active ? 0 : 6, each - 4, active ? h : h - 6, active&&this.focused ? COLOR.gold : '#14204a', 'right');
+      const x = i * each, active = i === this.index;
+      plate(ctx, x + 2, active ? 0 : 6, each - 4, active ? h : h - 6, active ? COLOR.gold : '#14204a', 'right');
       if (active && glow > 0.01) { ctx.save(); ctx.globalAlpha *= glow; ctx.strokeStyle = '#fff6c9'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore(); }
-      ctx.fillStyle = active&&this.focused ? '#0a1024' : COLOR.ink; ctx.fillText(label, x + each / 2 - 6, (active ? h : h + 6) / 2 + 1);
+      ctx.fillStyle = active ? '#0a1024' : COLOR.dim; ctx.fillText(label, x + each / 2 - 6, (active ? h : h + 6) / 2 + 1);
     });
-    ctx.fillStyle = COLOR.gold;ctx.fillRect(this.index*(each+gap)+8,h-4,each-16,4);
+    ctx.fillStyle = COLOR.gold; ctx.fillRect(0, h - 2, w, 2);
   }
 }
 
@@ -429,8 +429,8 @@ export function windowFrame(title: string, w: number, h: number, options:{inside
   return new Shape<object>({}, ctx => {
     panel(ctx, 0, 0, w, h);
     if(!title)return;
-    ctx.font = `${readable(24)}px ${FONT.display}`;
-    if(options.inside){plate(ctx,18,18,Math.min(w-136,ctx.measureText(title).width+44),52,COLOR.ally,'right');ctx.fillStyle=COLOR.ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(title,34,44,w-152);return;}
+    ctx.font = `24px ${FONT.display}`;
+    if(options.inside){ctx.fillStyle=COLOR.ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(title,24,44,w-136);return;}
     const titleWidth = ctx.measureText(title).width + 64;
     plate(ctx, 18, -20, titleWidth, 38, COLOR.ally, 'right');
     ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(title, 38, 0);
@@ -438,12 +438,12 @@ export function windowFrame(title: string, w: number, h: number, options:{inside
 }
 
 /** 글 한 덩어리. width를 주면 그 너비에서 줄을 바꾼다. state.text를 바꾸면 내용이 바뀐다. */
-export function label(text: string, size: number, options: { color?: string; width?: number; weight?: number; align?: CanvasTextAlign; display?: boolean } = {}): Shape<{ text: string }> {
+export function label(text: string, size: number, options: { color?: string; width?: number; weight?: number; align?: CanvasTextAlign; display?: boolean; lineHeight?:number } = {}): Shape<{ text: string }> {
   return new Shape({ text }, (ctx, s) => {
-    ctx.font = options.display ? `${readable(size)}px ${FONT.display}` : `${options.weight ?? 500} ${readable(size)}px ${FONT.body}`;
+    ctx.font = options.display ? `${size}px ${FONT.display}` : `${options.weight ?? 500} ${size}px ${FONT.body}`;
     ctx.fillStyle = options.color ?? COLOR.ink; ctx.textAlign = options.align ?? 'left'; ctx.textBaseline = 'top';
     const lines = options.width ? s.text.split('\n').flatMap(part => wrap(ctx, part, options.width!)) : s.text.split('\n');
-    lines.forEach((line, row) => ctx.fillText(line, 0, row * readable(size) * 1.5));
+    lines.forEach((line, row) => ctx.fillText(line, 0, row * (options.lineHeight??size*1.5)));
   });
 }
 
@@ -466,8 +466,8 @@ export function hintBar(text: string): Shape<{ text: string }> {
     if(touchInput())return;
     ctx.fillStyle = 'rgba(5,8,20,.86)'; ctx.fillRect(0, H - 40, W, 40);
     ctx.fillStyle = COLOR.gold; ctx.fillRect(0, H - 40, W, 2);
-    ctx.font = `500 ${readable(18)}px ${FONT.body}`; ctx.fillStyle = COLOR.dim; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const text=touchInput()?s.text.replace(/↑↓[^·]*·?/g,'').replace(/Enter[^·]*·?/g,'').replace(/Esc[^·]*·?/g,'').replace(/방향키[^·]*·?/g,'').replace(/키보드[^·]*·?/g,'').replace(/M으로/g,'버튼으로').replace(/빈 칸 두 번/g,'빈 곳을 길게 눌러').replace(/·\s*·/g,'·').replace(/^\s*·|·\s*$/g,'').trim():s.text;ctx.fillText(text, W / 2, H - 19);
+    ctx.font = `500 18px ${FONT.body}`; ctx.fillStyle = COLOR.dim; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(s.text, W / 2, H - 19,900);
   });
   node.z = 80;
   return node;
@@ -476,7 +476,7 @@ export function hintBar(text: string): Shape<{ text: string }> {
 /** 잠깐 떴다 사라지는 알림. 저장 완료, 획득 같은 "알려만 주면 되는" 일에 쓴다. */
 export function toast(screen: Screen, text: string): void {
   const node = new Shape({ text }, (ctx, s) => {
-    ctx.font = `700 ${readable(22)}px ${FONT.body}`;
+    ctx.font = `700 22px ${FONT.body}`;
     const lines=s.text.split('\n'),h=lines.length*28+20,w=Math.min(W-80,Math.max(...lines.map(line=>ctx.measureText(line).width))+80);
     plate(ctx, -w / 2 + 3, 4, w, h, 'rgba(0,0,0,.4)', 'right');
     plate(ctx, -w / 2, 0, w, h, '#0b1a44', 'right');
@@ -498,7 +498,7 @@ export function toast(screen: Screen, text: string): void {
 /** 숫자 값. 좌우 키 또는 양쪽 −/+ 누르기로 조절한다. */
 export class Slider extends Widget {
   constructor(public label: string, public value: number, readonly min: number, readonly max: number, private readonly change: (value: number) => void, options: { w?: number; step?: number; format?: (n: number) => string } = {}) {
-    super(); this.w = options.w ?? 720; this.h = uiMetrics().button; this.options = options;
+    super(); this.w = options.w ?? 720; this.h = 60; this.options = options;
   }
   private readonly options: { step?: number; format?: (n: number) => string };
   private set(value: number): void {
@@ -512,27 +512,27 @@ export class Slider extends Widget {
   point(phase: 'down' | 'move' | 'up', x: number): void {
     if (phase !== 'up') return;
     const local = x - this.x;
-    if(local>=this.w-280&&local<this.w-192)this.set(this.value-(this.options.step??1));else if(local>=this.w-88)this.set(this.value+(this.options.step??1));
+    if (local < this.w - 150) this.set(this.value - (this.options.step ?? 1)); else this.set(this.value + (this.options.step ?? 1));
   }
   protected paint(ctx: Ctx): void {
     panel(ctx, 0, 0, this.w, this.h, this.focused ? COLOR.ally : undefined);
-    ctx.font = `700 ${readable(23)}px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(this.label, 24, this.h/2);
-    ctx.textAlign = 'center'; ctx.fillStyle = COLOR.gold; ctx.fillText('−', this.w - 236, this.h/2);
-    ctx.fillStyle = COLOR.ink; ctx.fillText(this.options.format?.(this.value) ?? String(this.value), this.w - 140, this.h/2);
-    ctx.fillStyle = COLOR.gold; ctx.fillText('+', this.w - 44, this.h/2);
+    ctx.font = `700 23px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(this.label, 24, 30);
+    ctx.textAlign = 'center'; ctx.fillStyle = COLOR.gold; ctx.fillText('−', this.w - 260, 30);
+    ctx.fillStyle = COLOR.ink; ctx.fillText(this.options.format?.(this.value) ?? String(this.value), this.w - 150, 30);
+    ctx.fillStyle = COLOR.gold; ctx.fillText('+', this.w - 40, 30);
   }
 }
 
 /** 켜기/끄기. 좌우 키 또는 누르기로 바꾼다. */
 export class Toggle extends Widget {
-  constructor(public label: string, public value: boolean, private readonly change: (value: boolean) => void, width = 720) { super(); this.w = width; this.h = uiMetrics().button; }
+  constructor(public label: string, public value: boolean, private readonly change: (value: boolean) => void, width = 720) { super(); this.w = width; this.h = 60; }
   private flip(): void { this.value = !this.value; this.change(this.value); this.ui.play('confirm'); }
   act(action: Action): boolean { if (['left', 'right', 'confirm'].includes(action)) { this.flip(); return true; } return false; }
   point(phase: 'down' | 'move' | 'up'): void { if (phase === 'up') this.flip(); }
   protected paint(ctx: Ctx): void {
     panel(ctx, 0, 0, this.w, this.h, this.focused ? COLOR.ally : undefined);
-    ctx.font = `700 ${readable(23)}px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(this.label, 24, this.h/2);
-    ctx.textAlign = 'right'; ctx.fillStyle = COLOR.gold; ctx.fillText(this.value ? '켜짐' : '꺼짐', this.w - 32, this.h/2);
+    ctx.font = `700 23px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(this.label, 24, 30);
+    ctx.textAlign = 'right'; ctx.fillStyle = COLOR.gold; ctx.fillText(this.value ? '켜기' : '끄기', this.w - 32, 30);
   }
 }
 
@@ -541,7 +541,7 @@ export class TextField extends Widget {
   private input?: HTMLInputElement;
   private composing = false;
   private alignInput?: () => void;
-  constructor(private readonly host: Screen, public value: string, private readonly changed: (value: string) => void, readonly caption = '이름') { super(); this.w = 640; this.h = 84; }
+  constructor(private readonly host: Screen, public value: string, private readonly changed: (value: string) => void, readonly caption = '이름') { super(); this.w = 640; this.h = 76; }
   accept(value: string): void { this.value = value; this.changed(value); }
   private close(): void { const input = this.input; this.input = undefined; this.alignInput = undefined; this.composing = false; input?.remove(); }
   private edit(): void {
@@ -571,6 +571,16 @@ export class TextField extends Widget {
   remove(): void { this.close(); super.remove(); }
   protected paint(ctx: Ctx): void {
     panel(ctx, 0, 0, this.w, this.h, COLOR.ally);
-    ctx.font = `700 ${readable(30)}px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(this.value || this.caption, this.w / 2, this.h / 2);
+    ctx.font = `700 30px ${FONT.body}`; ctx.fillStyle = COLOR.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(this.value || this.caption, this.w / 2, this.h / 2);
   }
+}
+
+export class HoldButton extends Button {
+    constructor(text: string, private readonly held: (value: boolean) => void, options: {
+        w?: number;
+        h?: number;
+    } = {}) { super(text, () => { }, options); }
+    point(phase: 'down' | 'move' | 'up', _x: number, _y: number): void { if (phase === 'down')
+        this.held(true); if (phase === 'up')
+        this.held(false); }
 }

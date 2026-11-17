@@ -122,6 +122,7 @@ export class Board extends Widget {
     this.onHover?.(cell);
   }
 
+  pan(dx:number,dy:number):void{const clamp=(n:number,a:number,b:number)=>Math.min(b,Math.max(a,n));const camera=this.show.stage.camera;camera.x=clamp(camera.x+dx,W/2,Math.max(W/2,this.cols*CELL-W/2));camera.y=clamp(camera.y+dy,H/2,Math.max(H/2,this.rows*CELL-H/2));}
   // ── 카메라 ──
   private aim(cell: Cell): { x: number; y: number } {
     const c = this.center(cell), mapW = this.cols * CELL, mapH = this.rows * CELL;
@@ -133,7 +134,6 @@ export class Board extends Widget {
       y: clamp(Math.max(c.y - slackY, Math.min(c.y + slackY, camera.y)), H / 2, mapH),
     };
   }
-  pan(dx:number,dy:number):void{const clamp=(n:number,a:number,b:number)=>Math.min(b,Math.max(a,n));const camera=this.show.stage.camera;camera.x=clamp(camera.x+dx,W/2,Math.max(W/2,this.cols*CELL-W/2));camera.y=clamp(camera.y+dy,H/2,Math.max(H/2,this.rows*CELL-H/2));}
   /** 그 칸이 보이도록 카메라를 옮긴다. */
   *look(cell: Cell, seconds = 0.3): Step { yield* tween(this.show.stage.camera, this.aim(cell), seconds, ease.out); }
   /** 그 칸을 화면 한가운데로 바로 맞춘다(처음 들어올 때). */
@@ -226,7 +226,7 @@ export class Board extends Widget {
     // 발밑의 진영 고리. 색으로 편을 가린다.
     for (const { sprite, view } of this.sprites.values()) {
       ctx.globalAlpha = sprite.alpha;
-      ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(sprite.x, sprite.y - 6, 36, 13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(sprite.x, sprite.y - 6, 30, 11, 0, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = view.acted ? '#6b7690' : TEAM[view.team]; ctx.lineWidth = 3; ctx.stroke();
     }
     ctx.globalAlpha = 1;
@@ -236,16 +236,16 @@ export class Board extends Widget {
     for(const cell of this.blockedCells){const x=cell.col*CELL,y=cell.row*CELL;ctx.fillStyle="rgba(245,75,70,.3)";ctx.fillRect(x+3,y+3,CELL-6,CELL-6);ctx.strokeStyle="#ff6f68";ctx.lineWidth=4;ctx.strokeRect(x+5,y+5,CELL-10,CELL-10);ctx.beginPath();ctx.moveTo(x+15,y+15);ctx.lineTo(x+CELL-15,y+CELL-15);ctx.moveTo(x+CELL-15,y+15);ctx.lineTo(x+15,y+CELL-15);ctx.stroke();}
     for (const { sprite, view } of this.sprites.values()) {
       if (sprite.alpha < 0.5) continue;
-      if(view.barrier){ctx.strokeStyle="#80f5ff";ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(sprite.x,sprite.y-38,37,45,0,0,Math.PI*2);ctx.stroke();ctx.font="bold 21px sans-serif";ctx.fillStyle="#b2faff";ctx.textAlign="center";ctx.fillText(view.barrier>=100?"무적":"방벽 "+view.barrier,sprite.x,sprite.y-87);}
+      if(view.barrier){ctx.strokeStyle="#80f5ff";ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(sprite.x,sprite.y-38,37,45,0,0,Math.PI*2);ctx.stroke();ctx.font="bold 15px sans-serif";ctx.fillStyle="#b2faff";ctx.textAlign="center";ctx.fillText(view.barrier>=100?"무적":"방벽 "+view.barrier,sprite.x,sprite.y-87);}
       // 체력 막대
       if(view.revealed===false)continue;
       const x = sprite.x - 28, y = sprite.y + 2, ratio = Math.max(0, view.hp / view.hpMax);
       ctx.fillStyle = '#05070c'; ctx.fillRect(x - 1, y - 1, 58, 8);
       ctx.fillStyle = ratio > 0.5 ? COLOR.hp : ratio > 0.25 ? COLOR.gold : COLOR.enemy; ctx.fillRect(x, y, 56 * ratio, 6);
-      if (view.acted && this.onScreen(view.cell).y-38>176) {
+      if (view.acted) {
         // 행동 완료 표시
         ctx.fillStyle = '#0a1024'; ctx.fillRect(sprite.x + 14, sprite.y - 84, 22, 22);
-        ctx.fillStyle='#eef4ff';ctx.beginPath();ctx.arc(sprite.x+25,sprite.y-72,18,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0b1530';ctx.font='700 28px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✓', sprite.x + 25, sprite.y - 72);
+        ctx.fillStyle = '#b9c7e6'; ctx.font = '700 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('E', sprite.x + 25, sprite.y - 72);
       }
     }
     // 커서: 네 귀의 꺾쇠가 숨 쉬듯 벌어졌다 오므라든다.

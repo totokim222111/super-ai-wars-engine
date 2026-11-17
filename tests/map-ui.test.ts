@@ -66,14 +66,14 @@ describe('map pointer navigation and dossiers',()=>{
   const{app,screen,board}=setup();const p=board.onScreen({col:7,row:5});tap(screen,p.x,p.y);expect(mode(screen)).toBe('idle');app.tick(60);tap(screen,p.x,p.y);expect(mode(screen)).toBe('idle');tap(screen,p.x,p.y);expect(mode(screen)).toBe('menu');expect((screen.ui.focus as MenuList).items.map(i=>i.label)).toEqual(expect.arrayContaining(['작전 목표','부대 현황']));app.action('cancel');button(screen,'메뉴');expect(mode(screen)).toBe('menu');app.action('cancel');app.action('menu');expect(mode(screen)).toBe('menu');
  });
  it('opens the ally roster and a dossier, returns in order, and keeps a dossier open on background tap until explicit close',()=>{
-  const{app,screen}=setup();button(screen,'메뉴');choose(screen,'부대 현황');expect(app.top).toBeInstanceOf(RosterScreen);app.action('confirm');expect(app.top).toBe(screen);expect(mode(screen)).toBe('idle');
-  app.push(new UnitDetailsScreen(new CoreMap(state(),lookup).details('p1'),()=>app.pop()));tap(app.top,300,100);expect(app.top).toBeInstanceOf(UnitDetailsScreen);button(app.top,'뒤로');expect(app.top).toBe(screen);
+  const{app,screen}=setup();button(screen,'메뉴');choose(screen,'부대 현황');expect(app.top).toBeInstanceOf(RosterScreen);app.action('confirm');expect(app.top).toBeInstanceOf(UnitDetailsScreen);app.action('cancel');expect(app.top).toBeInstanceOf(RosterScreen);app.action('cancel');expect(app.top).toBe(screen);expect(mode(screen)).toBe('idle');
+  app.push(new UnitDetailsScreen(new CoreMap(state(),lookup).details('p1'),()=>app.pop()));tap(app.top,300,100);expect(app.top).toBeInstanceOf(UnitDetailsScreen);button(app.top,'✕');expect(app.top).toBe(screen);
  });
  it('masks enemy stats, skill and weapon text before scan, paints real numbers after scan, and paginates many weapons',()=>{
   const s=state(),base=s.content.weapons[0];for(let i=0;i<8;i++){s.content.weapons.push({...structuredClone(base),id:'extra-'+i,name:'연습 무기 '+i});s.content.mechs[0].weapons.push('extra-'+i);}const m=new CoreMap(s,lookup),app=new Headless();
   const secret=m.details('e1');expect(secret.weapons.every(w=>w.name==='???'&&w.power==='???')).toBe(true);app.push(new UnitDetailsScreen(secret,()=>app.pop()));const hidden=paint(app.top);expect(hidden.filter(s=>s==='???').length).toBeGreaterThan(6);expect(hidden).not.toContain(base.name);
   m.cast('p1','scan','e1');app.pop();app.push(new UnitDetailsScreen(m.details('e1'),()=>app.pop()));expect(paint(app.top)).toContain('HP');expect(m.details('e1').pilotStats.every(([,v])=>v!=='???')).toBe(true);
-  app.pop();const screen=new UnitDetailsScreen(m.details('p1'),()=>app.pop());app.push(screen);const before=paint(screen);app.action('menu');expect((screen as unknown as {tooltip:{visible:boolean}}).tooltip.visible).toBe(true);app.action('down');const after=paint(screen);expect(after).not.toEqual(before);expect(after).toContain('무기 2/6');app.action('down');expect(paint(screen).some(s=>s.includes('연습 무기'))).toBe(true);expect(snapshot(m.state())).toBe(m.save());
+  app.pop();const screen=new UnitDetailsScreen(m.details('p1'),()=>app.pop());app.push(screen);const before=paint(screen);app.action('menu');expect((screen as unknown as {tooltip:{visible:boolean}}).tooltip.visible).toBe(true);app.action('down');const after=paint(screen);expect(after).not.toEqual(before);expect(after).toContain('무기 2/4');app.action('down');expect(paint(screen).some(s=>s.includes('연습 무기'))).toBe(true);expect(snapshot(m.state())).toBe(m.save());
  });
  it('ignores outside taps on forecasts, responses and automatic playback',()=>{
   const{screen,app}=setup();const done=vi.fn();const internal=screen as unknown as {mode:{kind:string};responseDone:()=>void};for(const kind of ['forecast','responseForecast','busy']){internal.mode={kind};internal.responseDone=done;tap(screen,20,400);expect(mode(screen)).toBe(kind);}expect(done).not.toHaveBeenCalled();app.tick();
@@ -95,21 +95,21 @@ describe('map UI finish',()=>{
  it('returns with the local button exactly like Esc, including a provisional move',()=>{
   const{screen,app,model,board}=setup(),before=model.save(),u=model.units().find(u=>u.id==='p1')!;
   (screen as unknown as {goTo:(unit:typeof u,at:{col:number;row:number})=>void}).goTo(u,{col:2,row:2});app.tick(120);if(mode(screen)==='weapon')button(screen,'뒤로');expect(mode(screen)).toBe('command');
-  button(screen,'✕');expect(mode(screen)).toBe('move');expect(board.unitAt(u.cell)?.id).toBe(u.id);expect(model.save()).toBe(before);
+  button(screen,'뒤로');expect(mode(screen)).toBe('move');expect(board.unitAt(u.cell)?.id).toBe(u.id);expect(model.save()).toBe(before);
   app.action('cancel');expect(mode(screen)).toBe('idle');
  });
  it('does not offer an ESC shortcut while a mandatory response or automatic presentation is active',()=>{
   const{screen}=setup(),internal=screen as unknown as {set:(m:{kind:string})=>void};
   for(const kind of ['busy','responseForecast']){internal.set({kind});expect(widgets(screen).some(w=>w instanceof Button&&w.label==='ESC')).toBe(false);}
  });
- it('hides the unit card and terrain under popups, restores both, and hides the map-menu toggle until the popup closes',()=>{
+ it('hides the unit card and terrain under popups and retains the alpha map-menu toggle',()=>{
   const{screen}=setup();const internal=screen as unknown as {card:{visible:boolean};land:{visible:boolean};mapButton:Button};
-  button(screen,'메뉴');expect(internal.card.visible).toBe(false);expect(internal.land.visible).toBe(false);expect(internal.mapButton.enabled).toBe(true);expect(internal.mapButton.visible).toBe(false);
+  button(screen,'메뉴');expect(internal.card.visible).toBe(false);expect(internal.land.visible).toBe(false);expect(internal.mapButton.enabled).toBe(true);expect(internal.mapButton.visible).toBe(true);
   button(screen,'✕');expect(mode(screen)).toBe('idle');expect(internal.card.visible).toBe(true);expect(internal.land.visible).toBe(true);
  });
  it('opens a popup upward beside a lower map cell',()=>{
   const{screen,board}=setup();vi.spyOn(board,'onScreen').mockReturnValue({x:480,y:600});(screen as any).commands((screen as any).model.units()[0],{col:1,row:2});const list=screen.ui.focus as MenuList;
-  expect(list.y).toBeGreaterThanOrEqual(96);expect(list.y+list.h).toBeLessThanOrEqual(540);
+  expect(list.y).toBeGreaterThanOrEqual(16);expect(list.y+list.h).toBeLessThanOrEqual(540);
  });
  it('shows ally upgrades and equipped part names in place of defeat rewards, retaining enemy reward fields',()=>{
   const s=state(),ally=s.units[0],enemy=s.units[1];ally.upgrades={hp:2,en:1,armor:3,mobility:0,weapons:4};ally.parts=[s.content.parts![0].id];

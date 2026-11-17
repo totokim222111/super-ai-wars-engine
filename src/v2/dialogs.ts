@@ -13,14 +13,13 @@ export class ConfirmScreen extends Screen {
   /** @param onYes "예"를 골랐을 때. 창은 스스로 닫힌다. */
   constructor(private readonly message: string, private readonly onYes: () => void, private readonly labels: { yes: string; no: string; important?:boolean } = { yes: '예', no: '아니오' }) { super(); }
   enter(): void {
-    const { stage, ui } = this, w = 620, h = 320, x = (W - w) / 2, y = (H - h) / 2;
+    const { stage, ui } = this, w = 620, h = 250, x = (W - w) / 2, y = (H - h) / 2;
     const dim = stage.ui.add(cover('#020510')); dim.alpha = 0;
     const frame = stage.ui.add(Object.assign(windowFrame('확인', w, h), { x, y: y + 30, alpha: 0 }));
-    const text = stage.ui.add(Object.assign(label(this.message, 26, { width: w - 80, align: 'center' }), { x: W / 2, y: y + 62, alpha: 0 }));
+    const text = stage.ui.add(Object.assign(label(this.message, 26, { width: w - 80, align: 'center',lineHeight:32 }), { x: W / 2, y: y + 62, alpha: 0 }));
     const close = (): void => this.app.pop('none');
-    const yes = ui.add(Object.assign(new Button(this.labels.yes, () => { close(); this.onYes(); }, { kind: 'main', w:220,h:84,sound:this.labels.important?'important':'confirm' }), { x: W / 2 - 240, y: y+h-108 }));
-    const no = ui.add(Object.assign(new Button(this.labels.no, close, {w:220,h:84}), { x: W / 2 + 20, y: y+h-108 }));
-    yes.danger=/덮어|판매|타이틀|턴을/.test(this.message);
+    const yes = ui.add(Object.assign(new Button(this.labels.yes, () => { close(); this.onYes(); }, { kind: 'main', w: 220, sound:this.labels.important?'important':'confirm' }), { x: W / 2 - 240, y: y + h - 86 }));
+    const no = ui.add(Object.assign(new Button(this.labels.no, close, { w: 220 }), { x: W / 2 + 20, y: y + h - 86 }));
     // 실수로 누르지 않게 "아니오"에서 시작한다.
     ui.focusOn(no, true);
     ui.setNavigation({kind:'close',cancelInContent:true,bounds:{x,y,w,h},onBack:close});

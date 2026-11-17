@@ -1,4 +1,3 @@
-import {readable} from '../presentation';
 import { all, ease, tween, type Step } from '../flow';
 import type { InputEvent } from '../input';
 import { Button,label, windowFrame } from '../kit';
@@ -10,7 +9,7 @@ import { Shape } from '../stage';
 function heading(text:string,color:string,ink:string,barHeight:number):Shape<object>{
   return new Shape<object>({},ctx=>{
     plate(ctx,0,0,168,34,color,'right');
-    ctx.font=`900 ${readable(20)}px ${FONT.body}`;ctx.fillStyle=ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,16,18);
+    ctx.font=`900 20px ${FONT.body}`;ctx.fillStyle=ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,16,18);
     ctx.fillStyle=color;ctx.globalAlpha*=.55;ctx.fillRect(0,44,4,barHeight);
   });
 }
@@ -26,7 +25,7 @@ export class ObjectivesScreen extends Screen {
   constructor(readonly objectives:Objectives,private readonly done:()=>void,private readonly hint='누르면 시작',private readonly focus?:(h:import('./hints').MapHint)=>void){super();}
   enter():void {
     const rows=(lines:string[])=>lines.reduce((n,s)=>n+Math.max(1,Math.ceil(Array.from(s).length/23)),0);
-    const h=Math.min(620,254+(rows(this.objectives.win)+rows(this.objectives.lose))*34+(this.objectives.optional?.length?60+this.objectives.optional.length*84:0)),x=(W-720)/2,y=(H-h)/2;
+    const h=Math.min(620,254+(rows(this.objectives.win)+rows(this.objectives.lose))*34+(this.objectives.optional?.length?60+this.objectives.optional.length*38:0)),x=(W-720)/2,y=(H-h)/2;
     const dim=this.stage.ui.add(cover('#000'));dim.alpha=0;this.nodes.push(dim);
     this.ui.setNavigation({kind:'close',bounds:{x,y,w:720,h},onBack:()=>this.close()});
     const cards:Node[]=[];
@@ -38,14 +37,12 @@ export class ObjectivesScreen extends Screen {
       for(const line of lines){add(label(line,26,{color:'#fff',width:628}),x+56,top);top+=Math.max(1,Math.ceil(Array.from(line).length/23))*34;}
       top+=26;
     }
-    if(this.objectives.optional?.length){add(heading('보조 목표',COLOR.ally,'#fff',this.objectives.optional.length*84),x+36,top);top+=44;for(const h of this.objectives.optional){const b=this.ui.add(Object.assign(new ObjectiveRow(h.name+(h.kind==='danger'?' · 위험 지역':''),()=>this.focus?.(h)),{x:x+46,y:top,z:65}));this.nodes.push(b);top+=84;}}
-    add(label(this.objectives.optional?.length?'보조 목표를 누르면 위치 보기':this.hint.includes('시작')?'×를 눌러 출격':'',22,{color:COLOR.dim,align:'center'}),W/2,y+h-32);
+    if(this.objectives.optional?.length){add(heading('보조 목표',COLOR.ally,'#fff',this.objectives.optional.length*38),x+36,top);top+=44;for(const h of this.objectives.optional){const b=this.ui.add(Object.assign(new Button(h.name+(h.kind==='danger'?' · 위험 지역':''),()=>this.focus?.(h),{w:628,h:34}),{x:x+46,y:top,z:65}));this.nodes.push(b);top+=38;}}
+    add(label(this.hint,18,{color:COLOR.dim,align:'center'}),W/2,y+h-32);
     this.nodes.push(...cards);this.app.sound.play('confirm',.5);
     const screen=this;
-    this.run((function*():Step{yield*all(tween(dim,{alpha:.85},.2),...cards.map(n=>all(tween(n,{alpha:1},.25),tween(n,{y:n.y-24},.25,ease.out))));screen.ready=true;if(screen.pending)screen.close();})());
+    this.run((function*():Step{yield*all(tween(dim,{alpha:.55},.2),...cards.map(n=>all(tween(n,{alpha:1},.25),tween(n,{y:n.y-24},.25,ease.out))));screen.ready=true;if(screen.pending)screen.close();})());
   }
   private close():void{if(this.closing)return;if(!this.ready){this.pending=true;return;}this.closing=true;this.app.sound.play('cancel',.5);const screen=this;this.run((function*():Step{yield*all(...screen.nodes.map(n=>tween(n,{alpha:0},.15)));screen.done();})());}
-  input(event:InputEvent):void{if(this.ready&&this.ui.input(event))return;if(event.kind==='action'&&(event.action==='confirm'||event.action==='cancel'))this.close();}
+  input(event:InputEvent):void{if(this.ready&&this.ui.input(event))return;if(event.kind==='pointer'&&event.phase==='up'||event.kind==='action'&&(event.action==='confirm'||event.action==='cancel'))this.close();}
 }
-
-class ObjectiveRow extends Button{constructor(name:string,run:()=>void){super(name,run,{w:628,h:84});}protected paint(ctx:CanvasRenderingContext2D):void{ctx.font=`700 24px ${FONT.body}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=this.focused?COLOR.gold:COLOR.ink;ctx.fillText(this.label,12,42,604);ctx.strokeStyle='rgba(185,199,230,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(12,82);ctx.lineTo(612,82);ctx.stroke();}}

@@ -1,13 +1,16 @@
-import {W,H}from'./stage';
+import { H,W } from './stage';
 export function canvasScale():number{const r=typeof document==='undefined'?undefined:document.querySelector?.('canvas')?.getBoundingClientRect?.();return r?Math.min(r.width/W,r.height/H):1;}
 let touch=false;
 export function touchInput():boolean{return touch||typeof matchMedia!=='undefined'&&matchMedia('(pointer: coarse)').matches;}
 export function inputDevice(kind:string):void{touch=kind==='touch'||kind==='pen';}
 export const percent=(n:number)=>`${Math.round(n)}%`;
+/** Legacy preference values are accepted but never affect the single game layout. */
 export type UiSize='auto'|'normal'|'large';
-let preference:UiSize='auto';
-export function setUiSize(value:UiSize):void{preference=value;}
-export function resolveUiSize(value:UiSize=preference,touch=touchInput(),scale=canvasScale()):'normal'|'large'{return value==='auto'?(touch||scale<.7?'large':'normal'):value;}
-export const largeUi=()=>resolveUiSize()==='large';
-export const readable=(size:number)=>Math.max(largeUi()?21:14,size);
-export function uiMetrics(){const large=largeUi();return{large,font:large?24:22,small:large?21:14,button:large?84:56,row:large?84:56,gap:large?16:8,pager:large?84:40,tab:large?84:56};}
+export function setUiSize(_value:UiSize):void{}
+export function resolveUiSize(_value?:UiSize,_touch?:boolean,_scale?:number):'normal'{return 'normal';}
+export const largeUi=()=>false;
+/** Battle HUD readability is independent of menu density. */
+export const battleCompact=()=>touchInput()||canvasScale()<.7;
+export const battleReadable=(size:number)=>Math.max(battleCompact()?21:14,size);
+export const readable=(size:number)=>size;
+export function uiMetrics(){return{large:false,font:22,small:15,button:56,row:62,gap:6,pager:56,tab:56};}

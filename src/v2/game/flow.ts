@@ -1,34 +1,33 @@
-import {setUiSize} from '../presentation';
-import {playerName} from '../../campaign/player';
-import {activeHints} from '../map/hints';
-import {waitForAudio} from '../pack/preload';
-import {ruleCommand} from '../rules/runtime';
-import {battleMusic,unitTheme,storyMusic,MapMusic,type Theme} from './music';
-import {terrainImages} from '../map/terrain';
-import {talkTargets} from '../../scenario/runner';
+import { playerName } from '../../campaign/player';
 import { definitions } from '../../scenario/compile';
+import { talkTargets } from '../../scenario/runner';
+import { activeHints } from '../map/hints';
+import { terrainImages } from '../map/terrain';
 import type { Pack } from '../pack/load';
 import { packActors,packUnit } from '../pack/load';
+import { waitForAudio } from '../pack/preload';
+import { ruleCommand } from '../rules/runtime';
 import { StoryEvents } from '../story/events';
-import { PackStoryScreen, StoryPlayback } from '../story/play';
+import { PackStoryScreen,StoryPlayback } from '../story/play';
+import { battleMusic,MapMusic,storyMusic,unitTheme,type Theme } from './music';
 /** 타이틀 → 맵 → 결과 → 인터미션 → 다음 화. 대본은 실행하지 않는다. */
 import { CoreCampaign } from '../adapter/campaign';
 import { CoreMap } from '../adapter/map';
 import { ConfirmScreen } from '../dialogs';
-import { label, toast } from '../kit';
+import type { Sample } from '../gallery/sample';
+import { label,toast } from '../kit';
 import { MapScreen } from '../map/screen';
-import { TitleScreen, IntermissionScreen, UpgradeScreen } from '../menus/screens';
-import { PartsScreen } from '../menus/parts';
-import { PilotScreen } from '../menus/pilots';
-import { ShopScreen } from '../menus/shop';
-import { SaveScreen } from '../menus/saves';
-import { SettingsScreen } from '../menus/settings';
-import { ResultScreen } from '../menus/result';
+import { at,options,type MenuLook } from '../menus/common';
 import { CreditsScreen } from '../menus/credits';
 import { NewGameScreen } from '../menus/new-game';
-import { options, at, type MenuLook } from '../menus/common';
+import { PartsScreen } from '../menus/parts';
+import { PilotScreen } from '../menus/pilots';
+import { ResultScreen } from '../menus/result';
+import { SaveScreen } from '../menus/saves';
+import { IntermissionScreen,TitleScreen,UpgradeScreen } from '../menus/screens';
+import { SettingsScreen } from '../menus/settings';
+import { ShopScreen } from '../menus/shop';
 import type { App } from '../screen';
-import type { Sample } from '../gallery/sample';
 class GameMapScreen extends MapScreen {
     constructor(readonly rules: CoreMap, private readonly campaign: CoreCampaign, flow: GameFlow) {
         super(rules, {speed:()=>campaign.settings().speed,tutorial:()=>!!flow.pack&&rules.state().stage.id===flow.pack.game.episodes[0]?.stage&&!campaign.session.campaign.cycle&&!campaign.settings().helpSeen&&campaign.settings().tutorial!==false,onTutorialDone:()=>campaign.setSettings({...campaign.settings(),helpSeen:true}), ...flow.storyOptions(),hintOptions:flow.pack?.game.mapHints,hints:()=>{const s=rules.hintStatus(),ep=flow.pack?.game.episodes.find(e=>e.stage===s.stageId)?.id;return activeHints((flow.pack?.stageScripts?.[s.stageId]?.hints??[]).map(h=>{const u=h.unit&&s.units.find(u=>u.id===h.unit);return{...h,name:flow.displayName(h.name),objective:h.objective?flow.displayName(h.objective):undefined,...(u?{cell:{col:u.x,row:u.y}}:{})};}),scene=>!!campaign.storyValue(`v2:hint-fired:${ep}:${scene}`)||!!campaign.storyValue(`v2:story:${ep}:${scene}`),id=>!!campaign.session.campaign.flags[id]||!!campaign.storyValue(id),s.round,id=>{const u=s.units.find(u=>u.id===id);return u?u.alive&&!u.removed:s.pending.includes(id);});},animation:()=>campaign.settings().animation,setAnimation:value=>campaign.setSettings({...campaign.settings(),animation:value}),objectives:flow.displayObjectives(rules.state().stage.id),opening:!!flow.pack&&!campaign.storyValue(`v2:sortie:${flow.pack.game.episodes.find(e=>e.stage===rules.state().stage.id)?.id}`), onExit: () => flow.askTitle(), onEnd: () => flow.finish(), phaseMusic:team=>flow.mapMusic?.phase(team,rules.state().round),eventMusic:event=>flow.eventMusic(event),battle: exchange => ({ ...options(campaign), music: flow.pack?battleMusic(rules.state(),exchange,flow.pack.game.music,flow.pack.game.musicRules,u=>flow.castTheme(u)):undefined,opening:flow.pack?.game.musicRules?.battleOpening }),
@@ -73,7 +72,7 @@ export class GameFlow {
         if(pack)pack.progressFlag=flag=>model.storyValue(flag);
         if(app.loadingScreen)app.loadingScreen.flagValue=flag=>model.storyValue(flag);
         this.look = {lineImages:Object.fromEntries((pack?.players.lines??[]).map(l=>{const id=Object.values(l.mechs??{})[0];return[l.id,id&&pack?sample.images[packUnit(pack,id,'player').art??'']:undefined];})), background: sample.images[pack?.game.titleArt.background??''], portraits: (pack?.players.presets??[]).map(p=>sample.images[p.portrait??'']), temporary: !!pack&&pack.players.presets.some(p=>pack.cast[p.cast??'']?.temporary) };
-        model.onSettings = s => { setUiSize(s.uiSize??'auto'); app.flashScale=(s.flash??7)/10; if(app.cinematics)app.cinematics.enabled=s.cinematic!==false; app.sound.sfxVolume = s.sfx / 10; app.sound.musicVolume = s.music / 10; };
+        model.onSettings = s => { app.flashScale=(s.flash??7)/10; if(app.cinematics)app.cinematics.enabled=s.cinematic!==false; app.sound.sfxVolume = s.sfx / 10; app.sound.musicVolume = s.music / 10; };
         model.onSettings(model.settings());
     }
     /** 현재 진행은 model에 보존한 채 화면 쌓기만 걷는다. */

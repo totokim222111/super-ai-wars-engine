@@ -1,40 +1,37 @@
-import {scaleEnemyReference} from '../../core/stage-content';
-import {nextCycle} from '../../campaign/new-game-plus';
-import {prepareRules} from '../rules/runtime';
-import {term} from '../terms';
+import { nextCycle } from '../../campaign/new-game-plus';
+import { scaleEnemyReference } from '../../core/stage-content';
+import { prepareRules } from '../rules/runtime';
+import { term } from '../terms';
 /** 기존 캠페인의 자금·개조·파츠·저장을 감싼다. 화면과 브라우저 API는 모른다. */
-import { effectivePilot } from '../../core';
-import type { BattleState, Content, Unit, UpgradeKey } from '../../core';
-import { previewUpgrade, upgradeMech, equipPart, unequipPart } from '../../campaign/intermission';
-import {enabledFlag} from '../../campaign/conditions';
-import { titleSession, deployment, finishStage, retryDefeat } from '../../campaign/session';
-import type { Session } from '../../campaign/session';
-import { nextNode } from '../../campaign/state';
-import { setPlayer, playerName, validPlayerName } from '../../campaign/player';
-import {persistentUnit, persistBattle } from '../../campaign/progress';
+import { enabledFlag } from '../../campaign/conditions';
 import type { CampaignContent } from '../../campaign/content';
-import { makeSave, slotName, type Saves, type SlotId } from '../../campaign/saves';
-import { normalizeSettings, settingsKey, reducedMotion } from '../../platform/settings';
-import type { LocalStore } from '../../platform/storage';
+import { equipPart,previewUpgrade,unequipPart,upgradeMech } from '../../campaign/intermission';
+import { defaultPlayers,playerName,setPlayer,validPlayerName } from '../../campaign/player';
+import { persistBattle,persistentUnit } from '../../campaign/progress';
+import { decodeSaveCode,encodeSaveCode } from '../../campaign/save-code';
+import { makeSave,SLOT_IDS,slotName,type Saves,type SlotId } from '../../campaign/saves';
+import type { Session } from '../../campaign/session';
+import { deployment,finishStage,retryDefeat,titleSession } from '../../campaign/session';
+import { nextNode } from '../../campaign/state';
+import type { BattleState,Content,Unit,UpgradeKey } from '../../core';
+import { effectivePilot } from '../../core';
 import { createGame } from '../../game/controller';
+import { normalizeSettings,reducedMotion,settingsKey } from '../../platform/settings';
+import type { LocalStore } from '../../platform/storage';
+import { STORAGE_NOTICE,storageKey } from '../../platform/storage';
 import { createRunner } from '../../scenario/runner';
-import type { MenuModel, MenuSettings, StageResult, NewGameDraft, CreditLine } from '../menus/model';
-import type { MapLookup, MapChange } from './map';
-import {defeatPoints,type Progression} from '../pack/progression';
-import {readGrowth,trainedContent,type Growth} from './training';
-import {TrainingSaves} from './saves';
-import {defaultPlayers} from '../../campaign/player';
-import {encodeSaveCode,decodeSaveCode} from '../../campaign/save-code';
-import {SLOT_IDS} from '../../campaign/saves';
-import {STORAGE_NOTICE} from '../../platform/storage';
-import {storageKey} from '../../platform/storage';
+import type { CreditLine,MenuModel,MenuSettings,NewGameDraft,StageResult } from '../menus/model';
+import { defeatPoints,type Progression } from '../pack/progression';
+import type { MapChange,MapLookup } from './map';
+import { TrainingSaves } from './saves';
+import { readGrowth,trainedContent,type Growth } from './training';
 
 const keys: UpgradeKey[] = ['hp', 'en', 'armor', 'mobility', 'weapons'];
 const names:Partial<Record<UpgradeKey,string>> = {hp:'HP',armor:'장갑',mobility:'운동성',weapons:'무기 개조'};
 
 export class CoreCampaign implements MenuModel {
   session: Session = titleSession();
-  private preferences: MenuSettings = {uiSize:'auto',flash:reducedMotion()?3:7,enemyBattle:'full',helpSeen:false,tutorial:true, sfx: 8, music: 6, animation: 'on', speed: 1, shake: 10 };
+  private preferences: MenuSettings = {flash:reducedMotion()?3:7,enemyBattle:'full',helpSeen:false,tutorial:true, sfx: 8, music: 6, animation: 'on', speed: 1, shake: 10 };
   private playTime = 0;
   private started = Date.now();
   /** 불러오기 검사에서 선택한 현재 캠페인 계약으로 후속 저장도 검사한다. */
@@ -159,7 +156,7 @@ export class CoreCampaign implements MenuModel {
   settings(): MenuSettings { return { ...this.preferences }; }
   setSettings(s: MenuSettings): void {
     const number = (n: number, min: number, max: number, fallback: number) => Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
-    this.preferences = {uiSize:['auto','normal','large'].includes(s.uiSize??'auto')?s.uiSize:'auto',flash:number(s.flash??(reducedMotion()?3:7),0,10,7),enemyBattle:s.enemyBattle==='brief'?'brief':'full',helpSeen:s.helpSeen===true,tutorial:s.tutorial!==false, cinematic:s.cinematic!==false, sfx: number(s.sfx, 0, 10, 8), music: number(s.music, 0, 10, 6), speed: number(s.speed, 1, 3, 1), shake: number(s.shake, 0, 10, 10), animation: ['on', 'off', 'allies'].includes(s.animation) ? s.animation : 'on' };
+    this.preferences = {flash:number(s.flash??(reducedMotion()?3:7),0,10,7),enemyBattle:s.enemyBattle==='brief'?'brief':'full',helpSeen:s.helpSeen===true,tutorial:s.tutorial!==false, cinematic:s.cinematic!==false, sfx: number(s.sfx, 0, 10, 8), music: number(s.music, 0, 10, 6), speed: number(s.speed, 1, 3, 1), shake: number(s.shake, 0, 10, 10), animation: ['on', 'off', 'allies'].includes(s.animation) ? s.animation : 'on' };
     try {
       const old = normalizeSettings(JSON.parse(this.storage?.getItem(settingsKey(this.data.id)) ?? '{}'));
       this.storage?.setItem(settingsKey(this.data.id), JSON.stringify(normalizeSettings({ ...old, volume: this.preferences.sfx, animation: this.preferences.animation })));

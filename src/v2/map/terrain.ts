@@ -28,15 +28,15 @@ export function terrainCanvas(terrain:MapTerrain,cell:number,make?:(w:number,h:n
   const w=(terrain.tiles[0]?.length??0)*cell,h=terrain.tiles.length*cell;
   const create=make??(typeof OffscreenCanvas!=='undefined'?(w:number,h:number)=>new OffscreenCanvas(w,h):typeof document!=='undefined'?(w:number,h:number)=>Object.assign(document.createElement('canvas'),{width:w,height:h}):undefined);
   if(!create||!w||!h)return;const canvas=create(w,h),ctx=canvas.getContext('2d') as CanvasRenderingContext2D|null;if(!ctx)return;
-  const painted=terrain.images[terrain.painted??''];if(painted?.naturalWidth){ctx.drawImage(painted,0,0,w,h);for(const p of terrainPlan(terrain))if(p.style.edge==='road'){ctx.fillStyle='rgba(23,28,34,.18)';ctx.fillRect(p.x*cell,p.y*cell,cell,cell);}return canvas;}
+  const painted=terrain.images[terrain.painted??''];if(painted?.naturalWidth){ctx.drawImage(painted,0,0,w,h);return canvas;}
   const fill=(id:string|undefined,color:string)=>{const image=terrain.images[id??''];return image?.naturalWidth?ctx.createPattern(image,'repeat')??color:color;};
   ctx.fillStyle=fill(terrain.theme.ground,terrain.theme.color);ctx.fillRect(0,0,w,h);
   for(const p of terrainPlan(terrain)){
     const {style,neighbors:[up,right,down,left]}=p,x=p.x*cell,y=p.y*cell,color=style.color??terrain.theme.color;
     if(style.surface||style.edge){
-      ctx.save();if(style.edge==='road')ctx.globalAlpha=.15;ctx.translate(x,y);const r=style.edge?cell*.18:0,tl=!up&&!left?r:0,tr=!up&&!right?r:0,br=!down&&!right?r:0,bl=!down&&!left?r:0;
+      ctx.save();ctx.translate(x,y);const r=style.edge?cell*.18:0,tl=!up&&!left?r:0,tr=!up&&!right?r:0,br=!down&&!right?r:0,bl=!down&&!left?r:0;
       ctx.beginPath();ctx.moveTo(tl,0);ctx.lineTo(cell-tr,0);ctx.quadraticCurveTo(cell,0,cell,tr);ctx.lineTo(cell,cell-br);ctx.quadraticCurveTo(cell,cell,cell-br,cell);ctx.lineTo(bl,cell);ctx.quadraticCurveTo(0,cell,0,cell-bl);ctx.lineTo(0,tl);ctx.quadraticCurveTo(0,0,tl,0);ctx.closePath();
-      ctx.fillStyle=color;if(style.edge!=='road')ctx.fill();ctx.clip();ctx.translate(-x,-y);ctx.fillStyle=fill(style.surface,color);ctx.fillRect(0,0,w,h);ctx.restore();
+      ctx.fillStyle=color;ctx.fill();ctx.clip();ctx.translate(-x,-y);ctx.fillStyle=fill(style.surface,color);ctx.fillRect(0,0,w,h);ctx.restore();
     }else if(!terrain.images[terrain.theme.ground]?.naturalWidth){ctx.fillStyle=`rgba(255,255,255,${.012+(tileHash(p.x,p.y,3)%6)*.004})`;ctx.fillRect(x+2,y+2,cell-4,cell-4);}
     // 3×3 구획의 명암, 보도 이음매·배수 홈. 중앙은 말이 읽히도록 낮은 대비로 둔다.
     if(p.terrain===terrain.theme.roles?.plain){
@@ -52,9 +52,9 @@ export function terrainCanvas(terrain:MapTerrain,cell:number,make?:(w:number,h:n
       }
     }
     if(style.edge){
-      ctx.save();if(style.edge==='road')ctx.globalAlpha=.18;ctx.strokeStyle=terrain.theme.trim??'#99a8ac';ctx.lineWidth=style.edge==='water'?5:3;ctx.beginPath();
+      ctx.save();ctx.strokeStyle=terrain.theme.trim??'#99a8ac';ctx.lineWidth=style.edge==='water'?5:3;ctx.beginPath();
       if(!up){ctx.moveTo(x+3,y+3);ctx.lineTo(x+cell-3,y+3);}if(!right){ctx.moveTo(x+cell-3,y+3);ctx.lineTo(x+cell-3,y+cell-3);}if(!down){ctx.moveTo(x+3,y+cell-3);ctx.lineTo(x+cell-3,y+cell-3);}if(!left){ctx.moveTo(x+3,y+3);ctx.lineTo(x+3,y+cell-3);}ctx.stroke();
-      ctx.strokeStyle=terrain.theme.accent??'#9fd5df';ctx.lineWidth=1;ctx.globalAlpha=style.edge==='road'?.15:.65;ctx.stroke();ctx.restore();
+      ctx.strokeStyle=terrain.theme.accent??'#9fd5df';ctx.lineWidth=1;ctx.globalAlpha=.65;ctx.stroke();ctx.restore();
     }
     if(p.prop){
       const rect=terrain.theme.propsAtlas?.rects[p.prop],image=terrain.images[rect?terrain.theme.propsAtlas!.art:p.prop],size=cell*(style.scale??.78),px=x+(cell-size)/2,py=y+cell-size;

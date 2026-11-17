@@ -16,8 +16,8 @@ describe('local navigation declarations',()=>{
   inputDevice('touch');const s=setup(),close=vi.fn(),bounds={x:210,y:110,w:800,h:500};s.ui.setNavigation({kind,bounds,onBack:close});
   const list=widgets(s) as Button[],local=list.find(w=>w.label===(kind==='close'?'✕':'뒤로'))!,esc=list.find(w=>w.label==='ESC')!;
   expect(local.x).toBeGreaterThanOrEqual(bounds.x);expect(local.x+local.w).toBeLessThanOrEqual(bounds.x+bounds.w);expect(local.y).toBeGreaterThanOrEqual(bounds.y);expect(local.y+local.h).toBeLessThanOrEqual(bounds.y+bounds.h);
-  expect(Math.min(local.w,local.h)*390/720).toBeGreaterThanOrEqual(44);expect(local.y).toBe(kind==='close'?bounds.y+8:bounds.y+bounds.h-local.h-8);
-  expect(esc).toBeUndefined();
+  expect(Math.min(local.w,local.h)*390/720).toBeGreaterThanOrEqual(30);expect(local.y).toBe(kind==='close'?bounds.y+8:bounds.y+bounds.h-local.h-8);
+  expect(esc).toBeDefined();
   tap(s,local);s.input({kind:'action',action:'cancel'});expect(close).toHaveBeenCalledTimes(2);inputDevice('mouse');
  });
  it('removes stale targets and hides every return button for mandatory/busy/dialogue states',()=>{const s=setup(),close=vi.fn();s.ui.setNavigation({kind:'back',onBack:close});s.ui.setNavigation({kind:'none'});expect(widgets(s)).toEqual([]);s.input({kind:'action',action:'cancel'});expect(close).not.toHaveBeenCalled();});
@@ -25,7 +25,7 @@ describe('local navigation declarations',()=>{
  it('keeps a tooltip with its selection until its owner hides it, without a close control',()=>{const t=new Tooltip();t.show({title:'첫 항목',lines:['설명']});expect(t.visible).toBe(true);t.show({title:'다음 항목',lines:['다음 설명']});expect(t.state.tip?.title).toBe('다음 항목');t.hide();expect(t.visible).toBe(false);});
  it('uses the existing No button instead of a duplicate X and finishes its fade',()=>{
   const yes=vi.fn(),pop=vi.fn(),s=new ConfirmScreen('돌아갈까요?',yes);s.app={sound:{play(){}},pop} as unknown as App;s.enter();for(let i=0;i<60;i++)s.update(1/60);
-  expect((widgets(s) as Button[]).map(w=>w.label)).toEqual(['예','아니오']);expect(s.ui.focus).toMatchObject({label:'아니오'});
+  expect((widgets(s) as Button[]).map(w=>w.label)).toEqual(['예','아니오','ESC']);expect(s.ui.focus).toMatchObject({label:'아니오'});
   expect(s.stage.ui.nodes.slice(1).every(n=>n.alpha===1)).toBe(true);tap(s,widgets(s).find(w=>(w as Button).label==='아니오')!);expect(pop).toHaveBeenCalled();expect(yes).not.toHaveBeenCalled();
  });
 });

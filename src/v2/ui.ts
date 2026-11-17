@@ -1,14 +1,14 @@
-import {largeUi,readable} from './presentation';
+import { battleCompact as largeUi,battleReadable as readable } from './presentation';
 
-import { drawPortrait, faceOf, type Portrait } from './portrait';
-export { faceOf, drawPortrait, type Portrait, type Rect } from './portrait';
+import { drawPortrait,faceOf,type Portrait } from './portrait';
 import { term } from './terms';
+export { drawPortrait,faceOf,type Portrait,type Rect } from './portrait';
 /**
  * 화면 위에 얹는 것들: 창, 이름표, 게이지, 대사, 큰 글자.
  * 모두 Shape 노드라서 다른 그림처럼 움직이고 사라질 수 있다.
  * 모양의 약속: 남색 바탕, 위쪽에 밝은 선, 모서리 두 곳을 비스듬히 자른다. 둥근 모서리는 쓰지 않는다.
  */
-import { H, Shape, W } from './stage';
+import { H,Shape,W } from './stage';
 
 type Ctx = CanvasRenderingContext2D;
 export const FONT = {
@@ -81,18 +81,21 @@ export interface LineState { compact?:boolean; name: string; text: string; shown
 /** 대화 장면의 대사창. 화면 아래 넓게 깔리고 이름표가 왼쪽 위에 얹힌다. */
 export function storyLine(state: LineState): Shape<LineState> {
   return new Shape(state, (ctx, s) => {
-    const x=largeUi()?40:110,w=largeUi()?1080:W-220,h=s.compact?112:186,y=H-26-h;
-    panel(ctx,x,y,w,h,s.color);
+    const x = 110, w = W - 220, h = 186, y = H - 26 - h;
+    ctx.font = `30px ${FONT.display}`;
+    const badgeWidth=s.name?ctx.measureText(s.name).width+70:0;
+    panel(ctx, x, y, w, h, s.name?'rgba(0,0,0,0)':s.color);
+    if(s.name){ctx.fillStyle=s.color;ctx.fillRect(x+22+badgeWidth,y,w-22-badgeWidth,2);}
     if (s.name) {
-      ctx.font = `${readable(30)}px ${FONT.display}`;
+      ctx.font = `30px ${FONT.display}`;
       const nameWidth = ctx.measureText(s.name).width + 70;
-      if(!s.compact)plate(ctx, x + 22, y - 26, nameWidth, 46, s.color, 'right');
+      plate(ctx, x + 22, y - 26, nameWidth, 46, s.color, 'right');
       ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(s.name,x+46,s.compact?y+18:y-1);
+      ctx.fillText(s.name, x + 46, y - 1);
     }
-    ctx.font = `500 ${readable(s.compact?24:29)}px ${FONT.body}`; ctx.textBaseline = 'top'; ctx.fillStyle = COLOR.ink;
+    ctx.font = `500 29px ${FONT.body}`; ctx.textBaseline = 'top'; ctx.fillStyle = COLOR.ink;
     ctx.shadowColor = '#000'; ctx.shadowOffsetY = 2;
-    typed(ctx, wrap(ctx, s.text, w - 88), s.shown, x + 44, y+42,s.compact?30:44,'left');
+    typed(ctx, wrap(ctx, s.text, w - 88), s.shown, x + 44, y + 44, 44, 'left');
     ctx.shadowColor = 'transparent';
     if (s.shown >= s.text.length) {
       // 다 나왔으면 "누르면 다음" 표시
@@ -209,7 +212,7 @@ export function unitHud(state: HudState): Shape<HudState> {
     gauge(ctx, left, y + 79, barWidth, 11, s.en, s.enGhost, s.enMax, EN_TONES);
     if(largeUi()){ctx.textAlign='right';ctx.font=`700 ${readable(32)}px ${FONT.num}`;ctx.fillStyle=COLOR.ink;ctx.fillText(String(hp),x+w-22,72);}else statNumber(ctx,hp,s.hpMax,x+w-22,y+64,hp>=100000?24:27);
     if(largeUi()){ctx.textAlign='right';ctx.font=`700 ${readable(22)}px ${FONT.num}`;ctx.fillStyle=COLOR.ink;ctx.fillText(String(en),x+w-22,104);}else statNumber(ctx,en,s.enMax,x+w-22,y+92,19);
-    
+
   });
 }
 
@@ -228,7 +231,7 @@ export function weaponPlate(text: string, color: string, side: Side): Shape<{ te
 /** 화면 왼쪽 위의 장소 표시. 지문으로 쓰던 "장면: ○○"을 대신한다. */
 export function placeChip(text: string): Shape<{ text: string }> {
   return new Shape({ text }, (ctx, s) => {
-    ctx.font = `700 ${readable(20)}px ${FONT.body}`;
+    ctx.font = `700 20px ${FONT.body}`;
     const w = ctx.measureText(s.text).width + 62;
     plate(ctx, 0, 0, w, 40, 'rgba(7,11,26,.82)', 'right');
     ctx.fillStyle = COLOR.gold; ctx.fillRect(0, 0, 6, 40);
@@ -240,11 +243,11 @@ export function placeChip(text: string): Shape<{ text: string }> {
 /** A small two-line card for quiet CGs. Never receives a scene description. */
 export function quietCgCard(name:string,title:string,color:string):Shape<{name:string;title:string}> {
   return new Shape({name,title},(ctx,s)=>{
-    ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`${readable(24)}px ${FONT.body}`;
+    ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`24px ${FONT.body}`;
     const width=Math.min(W-84,Math.max(ctx.measureText(s.title).width,ctx.measureText(s.name).width)+36);
     ctx.fillStyle='rgba(5,12,29,.72)';ctx.fillRect(0,0,width,82);
-    ctx.fillStyle=color;ctx.font=`${readable(20)}px ${FONT.body}`;ctx.fillText(s.name,18,24,width-36);
-    ctx.font=`${readable(24)}px ${FONT.body}`;ctx.fillText(s.title,18,56,width-36);
+    ctx.fillStyle=color;ctx.font=`20px ${FONT.body}`;ctx.fillText(s.name,18,24,width-36);
+    ctx.font=`24px ${FONT.body}`;ctx.fillText(s.title,18,56,width-36);
   });
 }
 export function nameCard(name: string, sub: string, color: string, maxWidth=W-80): Shape<{ name: string; sub: string }> {
@@ -256,7 +259,7 @@ export function nameCard(name: string, sub: string, color: string, maxWidth=W-80
     ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     ctx.fillStyle = '#06112e'; ctx.fillText(s.name, 56, 73,maxWidth-112);
     ctx.fillStyle = '#fff'; ctx.fillText(s.name, 56, 68,maxWidth-112);
-    ctx.font = `700 ${readable(24)}px ${FONT.body}`;
+    ctx.font = `700 24px ${FONT.body}`;
     const subWidth = Math.min(maxWidth-56,ctx.measureText(s.sub).width + 46);
     ctx.fillStyle = '#06112e'; ctx.fillRect(56, 138, subWidth, 42);
     ctx.fillStyle = COLOR.gold; ctx.fillRect(56, 138, 6, 42);
